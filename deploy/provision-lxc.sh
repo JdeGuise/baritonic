@@ -227,13 +227,116 @@ deploy_release() {
   # A pure-JavaScript tree: node:sqlite is in the standard library, so
   # there is nothing here to compile.
   in_ct "cd $APP_DIR/apps/server && npm ci --omit=dev --silent"
+
+  # npm links the workspace packages into apps/server/node_modules, which
+  # resolves them for the server itself — but ug-import's own source also
+  # imports music-core, and Node resolves that from the package's real
+  # path, walking up from packages/ug-import/. A link directory at the
+  # app root is on that upward path, so it resolves from anywhere.
+  in_ct "mkdir -p $APP_DIR/node_modules/@music-ui &&
+         ln -sfn $APP_DIR/packages/music-core $APP_DIR/node_modules/@music-ui/music-core &&
+         ln -sfn $APP_DIR/packages/ug-import  $APP_DIR/node_modules/@music-ui/ug-import"
+
   in_ct "chown -R $SERVICE_USER:$SERVICE_USER $APP_DIR"
 
   run rm -f "$tarball"
 }
-install_service() { :; }
-wait_healthy() { :; }
-summary() { :; }
+install_service() {
+  log "Installing $SERVICE_NAME"
+
+  local unit
+  unit="$(
+    cat <<EOF
+[Unit]
+Description=music-ui — personal chord chart reader
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=$SERVICE_USER
+WorkingDirectory=$APP_DIR/apps/server
+Environment=NODE_ENV=production
+Environment=PORT=$APP_PORT
+Environment=BIND_ADDR=0.0.0.0
+Environment=DATA_DIR=$DATA_DIR
+ExecStart=/usr/bin/node --disable-warning=ExperimentalWarning --experimental-strip-types src/server.ts
+Restart=on-failure
+RestartSec=3
+
+# The service needs nothing beyond its own data directory.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=$DATA_DIR
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  )"
+
+  write_in_ct "/etc/systemd/system/$SERVICE_NAME" "$unit"
+  in_ct "systemctl daemon-reload"
+  in_ct "systemctl enable $SERVICE_NAME"
+  in_ct "systemctl restart $SERVICE_NAME"
+}
+
+container_ip() {
+  if [[ $DRY_RUN -eq 1 ]]; then
+    echo "<container-ip>"
+  else
+    pct exec "$CTID" -- hostname -I 2>/dev/null | awk '{print $1}'
+  fi
+}
+
+wait_healthy() {
+  log "Waiting for /healthz"
+
+  if [[ $DRY_RUN -eq 1 ]]; then
+    info "\$ curl -fsS http://<container-ip>:$APP_PORT/healthz"
+    return 0
+  fi
+
+  local ip tries=0
+  ip="$(container_ip)"
+  [[ -n "$ip" ]] || die "Could not determine the container's IP address."
+
+  until curl -fsS "http://$ip:$APP_PORT/healthz" >/dev/null 2>&1; do
+    tries=$((tries + 1))
+    if [[ $tries -gt 45 ]]; then
+      printf '\n'
+      pct exec "$CTID" -- journalctl -u "$SERVICE_NAME" -n 40 --no-pager || true
+      die "$SERVICE_NAME did not become healthy. Recent log above."
+    fi
+    sleep 1
+  done
+  info "healthy after ${tries}s"
+}
+
+summary() {
+  local ip
+  ip="$(container_ip)"
+
+  log "Done"
+  cat <<EOF
+
+   music-ui is running at   http://${ip}:${APP_PORT}
+
+   container   $CTID ($CT_HOSTNAME)
+   app         $APP_DIR
+   database    $DATA_DIR/music-ui.db
+   service     $SERVICE_NAME as $SERVICE_USER
+
+   Logs        pct exec $CTID -- journalctl -u $SERVICE_NAME -f
+   Restart     pct exec $CTID -- systemctl restart $SERVICE_NAME
+   Back up     pct pull $CTID $DATA_DIR/music-ui.db ./music-ui-backup.db
+   Redeploy    re-run this script
+
+   There is no authentication. Keep this on a trusted network.
+
+EOF
+}
 
 main() {
   preflight

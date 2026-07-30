@@ -51,6 +51,10 @@ check "creates a container" "pct create" "$plan"
 check "unprivileged" "--unprivileged 1" "$plan"
 check "installs node" "nodesource" "$plan"
 check "runs npm ci without devDeps" "npm ci --omit=dev" "$plan"
+# Without this, ug-import cannot resolve music-core from its own source:
+# npm only links the packages into apps/server/node_modules, which is not
+# on the upward resolution path from packages/ug-import/.
+check "links workspace packages at the app root" "node_modules/@music-ui" "$plan"
 check "installs a systemd unit" "music-ui.service" "$plan"
 check "enables the service" "systemctl enable" "$plan"
 check "binds to all interfaces" "BIND_ADDR=0.0.0.0" "$plan"
