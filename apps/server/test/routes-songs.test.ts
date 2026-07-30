@@ -144,6 +144,40 @@ describe("GET /api/songs/:id", () => {
     expect(body.orphanedOverrides[0]!.reason).toBe("symbol-changed");
   });
 
+  it("returns the raw override list alongside the applied document", async () => {
+    const id = createSongRepo(t.db).insert(sampleImport(), null);
+    createOverrideRepo(t.db).upsert(id, {
+      sectionIdx: 0,
+      lineIdx: 0,
+      chordIdx: 0,
+      originalSym: "C",
+      correctedSym: "Cmaj7",
+      inversion: 1,
+    });
+    await start();
+    const body = (await (await fetch(`${base}/api/songs/${id}`)).json()) as {
+      document: { sections: { lines: { chords: { sym: string }[] }[] }[] };
+      overrides: { originalSym: string; correctedSym: string | null; inversion: number | null }[];
+    };
+
+    // The document shows the correction; the override list still reports
+    // what was originally parsed there.
+    expect(body.document.sections[0]!.lines[0]!.chords[0]!.sym).toBe("Cmaj7");
+    expect(body.overrides).toHaveLength(1);
+    expect(body.overrides[0]).toMatchObject({
+      originalSym: "C",
+      correctedSym: "Cmaj7",
+      inversion: 1,
+    });
+  });
+
+  it("returns an empty override list when there are none", async () => {
+    const id = createSongRepo(t.db).insert(sampleImport(), null);
+    await start();
+    const body = (await (await fetch(`${base}/api/songs/${id}`)).json()) as { overrides: unknown[] };
+    expect(body.overrides).toEqual([]);
+  });
+
   it("returns 404 for a missing song", async () => {
     await start();
     expect((await fetch(`${base}/api/songs/999`)).status).toBe(404);

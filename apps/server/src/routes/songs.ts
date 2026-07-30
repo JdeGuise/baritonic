@@ -71,10 +71,16 @@ export function createSongRoutes(deps: { db: DatabaseSync; fetchImpl?: FetchLike
     const song = songs.get(id);
     if (!song) throw new HttpError(404, "Song not found");
 
-    const overlay = applyOverrides(song.document, overrides.listForSong(id));
+    const stored = overrides.listForSong(id);
+    const overlay = applyOverrides(song.document, stored);
     res.json({
       ...song,
       document: overlay.document,
+      // The raw list, so the client can recover a position's original
+      // symbol after a correction has been applied over it. Without this,
+      // re-correcting a chord would send the visible symbol as originalSym
+      // and orphan its own override on the next load.
+      overrides: stored,
       inversions: overlay.inversions,
       orphanedOverrides: overlay.orphaned,
     });
