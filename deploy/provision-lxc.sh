@@ -124,8 +124,67 @@ done
 
 # ── stages (filled in by later tasks) ───────────────────────────
 
-preflight() { log "Preflight"; }
-ensure_container() { :; }
+preflight() {
+  log "Preflight"
+
+  if [[ $DRY_RUN -eq 0 ]]; then
+    [[ $EUID -eq 0 ]] || die "Run as root on the Proxmox host."
+    command -v pct >/dev/null || die "pct not found — is this a Proxmox host?"
+  fi
+
+  if [[ "$IPV4" != "dhcp" && -z "$GATEWAY" ]]; then
+    die "GATEWAY is required when IPV4 is a static CIDR ($IPV4)."
+  fi
+
+  [[ -d "$REPO_ROOT/apps/server/src" ]] || die "Cannot find the project at $REPO_ROOT"
+
+  info "host:      $(hostname 2>/dev/null || echo unknown)"
+  info "container: $CTID ($CT_HOSTNAME)"
+  info "network:   $IPV4 on $BRIDGE${GATEWAY:+ via $GATEWAY}"
+}
+
+container_exists() {
+  [[ $DRY_RUN -eq 1 ]] && return 1
+  pct status "$CTID" >/dev/null 2>&1
+}
+
+ensure_container() {
+  if container_exists; then
+    log "Container $CTID exists — redeploying into it"
+  else
+    log "Creating container $CTID"
+
+    local net="name=eth0,bridge=$BRIDGE,ip=$IPV4"
+    [[ -n "$GATEWAY" ]] && net="$net,gw=$GATEWAY"
+
+    run pct create "$CTID" "$TEMPLATE_STORAGE:vztmpl/$TEMPLATE" \
+      --hostname "$CT_HOSTNAME" \
+      --unprivileged 1 \
+      --features nesting=1 \
+      --cores "$CORES" \
+      --memory "$MEMORY_MB" \
+      --swap "$SWAP_MB" \
+      --rootfs "$ROOTFS_STORAGE:$DISK_GB" \
+      --net0 "$net" \
+      --onboot 1 \
+      --description "music-ui — personal chord chart reader"
+  fi
+
+  log "Starting container"
+  run pct start "$CTID" || true
+
+  # pct exec fails until the container's init has come up.
+  if [[ $DRY_RUN -eq 0 ]]; then
+    local tries=0
+    until pct exec "$CTID" -- true 2>/dev/null; do
+      tries=$((tries + 1))
+      [[ $tries -gt 30 ]] && die "Container $CTID did not become ready."
+      sleep 1
+    done
+  else
+    info "(would wait for the container to accept commands)"
+  fi
+}
 provision_base() { :; }
 deploy_release() { :; }
 install_service() { :; }
