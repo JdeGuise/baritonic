@@ -204,7 +204,33 @@ provision_base() {
   in_ct "mkdir -p $APP_DIR $DATA_DIR"
   in_ct "chown -R $SERVICE_USER:$SERVICE_USER $DATA_DIR"
 }
-deploy_release() { :; }
+deploy_release() {
+  log "Building the web app"
+  run bash -c "cd '$REPO_ROOT/apps/web' && npm ci --silent && npm run build --silent"
+
+  log "Packaging the release"
+  # Exactly the paths apps/server resolves: its own source, the two
+  # workspace packages it imports through file:, and the web build.
+  local tarball="/tmp/music-ui-release.tar.gz"
+  run bash -c "cd '$REPO_ROOT' && tar czf '$tarball' \
+    packages/music-core/src packages/music-core/package.json \
+    packages/ug-import/src packages/ug-import/package.json \
+    apps/server/src apps/server/package.json apps/server/package-lock.json \
+    apps/web/dist"
+
+  log "Pushing the release into the container"
+  in_ct "rm -rf $APP_DIR/packages $APP_DIR/apps && mkdir -p $APP_DIR"
+  run pct push "$CTID" "$tarball" "/tmp/music-ui-release.tar.gz"
+  in_ct "tar xzf /tmp/music-ui-release.tar.gz -C $APP_DIR && rm -f /tmp/music-ui-release.tar.gz"
+
+  log "Installing production dependencies"
+  # A pure-JavaScript tree: node:sqlite is in the standard library, so
+  # there is nothing here to compile.
+  in_ct "cd $APP_DIR/apps/server && npm ci --omit=dev --silent"
+  in_ct "chown -R $SERVICE_USER:$SERVICE_USER $APP_DIR"
+
+  run rm -f "$tarball"
+}
 install_service() { :; }
 wait_healthy() { :; }
 summary() { :; }
