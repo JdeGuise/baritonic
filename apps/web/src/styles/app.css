@@ -67,3 +67,37 @@ body {
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+/* chord chart */
+.chart { display: flex; flex-direction: column; gap: var(--s5); }
+.chart-section { display: flex; flex-direction: column; gap: var(--s2); }
+.chart-lines { display: flex; flex-direction: column; gap: var(--s3); }
+.chart-line { display: flex; flex-wrap: wrap; align-items: flex-end; }
+.chart-note { margin: 0; font-size: 0.9rem; color: var(--muted); font-style: italic; }
+
+.unit { display: inline-flex; flex-direction: column; }
+.unit-chord {
+  font-family: var(--mono); font-size: 0.82rem; font-weight: 700;
+  color: var(--felt); line-height: 1.3; height: 1.3em; white-space: pre;
+}
+.unit-chord.unknown { color: var(--muted); text-decoration: underline dotted; }
+.unit-text { font-family: var(--sans); font-size: 1rem; line-height: 1.35; white-space: pre; }
+.chart-line.instrumental .unit { margin-right: 1.6rem; }
+.chart-line.instrumental .unit-chord { font-size: 0.9rem; }
+
+/* piano diagram */
+.pianos { display: grid; grid-template-columns: repeat(auto-fill, minmax(178px, 1fr)); gap: var(--s4); }
+.pd {
+  display: flex; flex-direction: column; gap: var(--s2); margin: 0;
+  border: 1px solid var(--hair); border-radius: 5px;
+  padding: var(--s3); background: var(--panel);
+}
+.pd-name { font-family: var(--mono); font-size: 0.92rem; font-weight: 700; color: var(--felt); }
+.pd svg { width: 100%; height: auto; display: block; }
+.pd-tones { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); letter-spacing: 0.06em; }
+
+.key.white { fill: var(--key-white); stroke: var(--hair-firm); stroke-width: 1; }
+.key.black { fill: var(--key-black); stroke: var(--key-black); stroke-width: 1; }
+.key.lit { fill: var(--felt); }
+.key.bass { stroke: var(--felt); stroke-width: 2; }
+.finger { font-family: var(--mono); font-size: 9px; font-weight: 700; fill: #fff; }
