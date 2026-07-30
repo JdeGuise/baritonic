@@ -49,7 +49,7 @@ Everything is an environment variable; `--help` lists them. Set them inline:
 
     CTID=<next free>          container id, auto-picked if unset
     CT_HOSTNAME=baritonic
-    STORAGE=local-lvm         storage for the container rootfs
+    STORAGE=<asked>           rootfs storage; prompts if unset
     TEMPLATE_STORAGE=local    storage holding LXC templates
     BRIDGE=vmbr0
     DISK_GB=6                 the web build's node_modules is ~300MB
@@ -63,6 +63,14 @@ Everything is an environment variable; `--help` lists them. Set them inline:
 The Debian 12 template is resolved and downloaded automatically — the newest
 `debian-12-standard` in the Proxmox index — so there is no filename to keep
 current.
+
+**Storage is chosen, not assumed.** With `STORAGE` unset the script lists
+every active storage that accepts a container rootfs, with free space, and
+asks which to use — defaulting to the roomiest. Set `STORAGE` to skip the
+question. Either way it checks there is room for `DISK_GB` *before* creating
+anything, so a full thin pool produces a readable message rather than a raw
+`lvcreate` error. With no terminal attached it picks the roomiest and says
+so, which keeps it scriptable.
 
 ## Operating it
 

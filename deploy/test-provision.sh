@@ -98,6 +98,15 @@ check "hardens the unit" "ProtectSystem=strict" "$unit"
 check "permits writes to the data dir" "ReadWritePaths=/var/lib/baritonic" "$unit"
 check "restarts on failure" "Restart=on-failure" "$unit"
 
+echo "== storage selection =="
+# Guessing a storage name and letting pct create fail with a raw LVM error
+# is a bad first run, so the script must look before it leaps.
+check "lists storages before creating" "pvesm status --content rootdir" "$plan"
+check "chooses storage before pct create" "Choosing storage" "$plan"
+refute "does not hardcode a storage" "--rootfs local-lvm" "$plan"
+plan4="$(STORAGE=tank "$SCRIPT" --dry-run 2>&1)"
+check "an explicit storage is used" "tank:" "$plan4"
+
 echo "== overrides are honoured =="
 plan2="$(CTID=999 APP_PORT=8080 CT_HOSTNAME=music BRANCH=dev "$SCRIPT" --dry-run 2>&1)"
 check "custom ctid" "pct create 999" "$plan2"

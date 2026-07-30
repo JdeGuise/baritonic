@@ -18,7 +18,7 @@ set -euo pipefail
 # ---- Settings (override via environment) -----------------------------------
 CTID="${CTID:-}"                                 # blank = auto-pick next free VMID
 CT_HOSTNAME="${CT_HOSTNAME:-baritonic}"           # container name shown in Proxmox
-STORAGE="${STORAGE:-local-lvm}"                  # storage for the container rootfs
+STORAGE="${STORAGE:-}"                           # blank = ask, or pick the roomiest
 TEMPLATE_STORAGE="${TEMPLATE_STORAGE:-local}"    # storage holding LXC templates
 BRIDGE="${BRIDGE:-vmbr0}"
 DISK_GB="${DISK_GB:-6}"                          # the web build's node_modules is ~300MB
@@ -68,6 +68,75 @@ run() {
 }
 
 say() { printf '>> %s\n' "$*"; }
+die() { printf '!! %s\n' "$*" >&2; exit 1; }
+
+# ---- Storage selection -----------------------------------------------------
+# Guessing a storage name and letting pct create fail with a raw LVM error is
+# a bad first-run experience, so pick deliberately and check for room before
+# creating anything.
+
+# name  type  free-GiB, for active storages that accept a container rootfs.
+list_storages() {
+  pvesm status --content rootdir 2>/dev/null |
+    awk 'NR>1 && $3=="active" {printf "%s %s %.1f\n", $1, $2, $6/1024/1024}'
+}
+
+storage_free_gb() {
+  list_storages | awk -v s="$1" '$1==s {print $3}'
+}
+
+choose_storage() {
+  if [ "$DRY_RUN" -eq 1 ]; then
+    [ -n "$STORAGE" ] || STORAGE="<chosen at run time>"
+    printf '   $ pvesm status --content rootdir   (list storages, check free space)\n'
+    return
+  fi
+
+  local rows
+  rows="$(list_storages)"
+  [ -n "$rows" ] || die "No active storage accepts a container rootfs. Check 'pvesm status'."
+
+  # An explicit choice is honoured, but still checked for room.
+  if [ -n "$STORAGE" ]; then
+    local free
+    free="$(storage_free_gb "$STORAGE")"
+    [ -n "$free" ] || {
+      printf 'Storage "%s" is not available for container rootfs. Options:\n\n' "$STORAGE" >&2
+      printf '  %-16s %-10s %s\n' "NAME" "TYPE" "FREE" >&2
+      printf '%s\n' "$rows" | awk '{printf "  %-16s %-10s %s GiB\n", $1, $2, $3}' >&2
+      exit 1
+    }
+    awk -v f="$free" -v d="$DISK_GB" 'BEGIN{exit !(f < d)}' &&
+      die "Storage \"$STORAGE\" has ${free} GiB free but the container needs ${DISK_GB} GiB. Free space, pick another storage, or lower DISK_GB."
+    return
+  fi
+
+  # Nothing specified. Offer a choice when there is a human to ask.
+  printf '\n   %-16s %-10s %s\n' "NAME" "TYPE" "FREE"
+  printf '%s\n' "$rows" | awk '{printf "   %-16s %-10s %s GiB\n", $1, $2, $3}'
+  printf '\n'
+
+  local best
+  best="$(printf '%s\n' "$rows" | sort -k3 -gr | head -n1 | awk '{print $1}')"
+
+  if [ -t 0 ]; then
+    local answer
+    read -r -p "Which storage for the container rootfs? [$best] " answer || true
+    STORAGE="${answer:-$best}"
+    storage_free_gb "$STORAGE" >/dev/null || [ -n "$(storage_free_gb "$STORAGE")" ] ||
+      die "\"$STORAGE\" is not in the list above."
+  else
+    STORAGE="$best"
+    say "No STORAGE set and no terminal to ask — using \"$STORAGE\" (most free space)."
+  fi
+
+  local free
+  free="$(storage_free_gb "$STORAGE")"
+  awk -v f="$free" -v d="$DISK_GB" 'BEGIN{exit !(f < d)}' &&
+    die "Storage \"$STORAGE\" has ${free} GiB free but the container needs ${DISK_GB} GiB."
+
+  say "Using storage \"$STORAGE\" (${free} GiB free)."
+}
 
 # ---- Resolve the template --------------------------------------------------
 say "Resolving template..."
@@ -95,6 +164,9 @@ if [ -z "$CTID" ]; then
     CTID="$(pvesh get /cluster/nextid)"
   fi
 fi
+
+say "Choosing storage for the container rootfs..."
+choose_storage
 
 say "Creating LXC $CTID ($CT_HOSTNAME)..."
 run pct create "$CTID" "$TEMPLATE_REF" \
