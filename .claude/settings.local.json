@@ -3,7 +3,17 @@
     "allow": [
       "WebFetch(domain:tabs.ultimate-guitar.com)",
       "Bash(curl -sL -A \"Mozilla/5.0 \\(Macintosh; Intel Mac OS X 10_15_7\\) AppleWebKit/537.36 \\(KHTML, like Gecko\\) Chrome/120.0 Safari/537.36\" \"https://tabs.ultimate-guitar.com/tab/my-chemical-romance/cancer-chords-427215\" -o ug.html -w \"http=%{http_code} bytes=%{size_download}\\\\n\")",
-      "Bash(python3 -c ' *)"
+      "Bash(python3 -c ' *)",
+      "Bash(command -v brew)",
+      "Bash(brew --version)",
+      "Read(//opt/homebrew/bin/**)",
+      "Bash(brew install *)",
+      "Bash(npm --version)",
+      "Bash(git checkout *)",
+      "Bash(npm install *)",
+      "Bash(npx vitest *)",
+      "Bash(npm test *)",
+      "Bash(npm run *)"
     ]
   }
 }
