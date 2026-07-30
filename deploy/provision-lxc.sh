@@ -185,7 +185,25 @@ ensure_container() {
     info "(would wait for the container to accept commands)"
   fi
 }
-provision_base() { :; }
+provision_base() {
+  log "Installing base packages and Node $NODE_MAJOR"
+
+  in_ct "export DEBIAN_FRONTEND=noninteractive && apt-get update -qq"
+  in_ct "export DEBIAN_FRONTEND=noninteractive && apt-get install -y -qq ca-certificates curl gnupg tar"
+
+  # NodeSource: Debian's own node is far too old for node:sqlite, which
+  # the database layer depends on being in the standard library.
+  in_ct "if ! command -v node >/dev/null || [ \"\$(node -p 'process.versions.node.split(\".\")[0]')\" -lt $NODE_MAJOR ]; then
+           curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | bash - &&
+           export DEBIAN_FRONTEND=noninteractive && apt-get install -y -qq nodejs;
+         fi"
+  in_ct "node --version && npm --version"
+
+  log "Creating service user and directories"
+  in_ct "id -u $SERVICE_USER >/dev/null 2>&1 || useradd --system --create-home --home-dir /var/lib/$SERVICE_USER --shell /usr/sbin/nologin $SERVICE_USER"
+  in_ct "mkdir -p $APP_DIR $DATA_DIR"
+  in_ct "chown -R $SERVICE_USER:$SERVICE_USER $DATA_DIR"
+}
 deploy_release() { :; }
 install_service() { :; }
 wait_healthy() { :; }
