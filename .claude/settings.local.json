@@ -32,7 +32,8 @@
       "Bash(./deploy/test-provision.sh)",
       "Bash(chmod +x deploy/provision-lxc.sh)",
       "Bash(command -v shellcheck)",
-      "Bash(shellcheck deploy/provision-lxc.sh deploy/test-provision.sh)"
+      "Bash(shellcheck deploy/provision-lxc.sh deploy/test-provision.sh)",
+      "Bash(git branch *)"
     ]
   }
 }
