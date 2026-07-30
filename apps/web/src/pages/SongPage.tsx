@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
   chooseVoicings,
@@ -10,14 +10,24 @@ import {
   spellChordTones,
   transposeDocument,
   type Chord,
+  type Song,
 } from "@music-ui/music-core";
 import { api } from "../api/client.ts";
-import type { SongDetail } from "../api/types.ts";
+import type { ChordPosition, SongDetail } from "../api/types.ts";
 import { ChordChart } from "../components/ChordChart.tsx";
+import { ChordEditor } from "../components/ChordEditor.tsx";
 import { PianoDiagram } from "../components/PianoDiagram.tsx";
 import { KeySelector } from "../components/KeySelector.tsx";
+import { findOverride, originalSymAt } from "../music/editing.ts";
 
 const LOW_CONFIDENCE = 0.6;
+
+/** The symbol as it currently appears on screen, in the target key. */
+function displayedSymbolAt(doc: Song, at: ChordPosition): string | null {
+  const line = doc.sections[at.sectionIdx]?.lines[at.lineIdx];
+  if (!line || line.kind === "text") return null;
+  return line.chords[at.chordIdx]?.sym ?? null;
+}
 
 export function SongPage() {
   const { id } = useParams();
@@ -27,23 +37,24 @@ export function SongPage() {
   const [error, setError] = useState<string | null>(null);
   const [targetKey, setTargetKey] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [editing, setEditing] = useState<ChordPosition | null>(null);
+
+  const load = useCallback(async () => {
+    const s = await api.getSong(songId);
+    setSong(s);
+    // Keep whatever key the user is currently reading in across a reload.
+    setTargetKey((current) => current ?? s.preferredKey ?? s.keyOverride ?? s.detectedKey ?? "C");
+  }, [songId]);
 
   useEffect(() => {
     let live = true;
-    api
-      .getSong(songId)
-      .then((s) => {
-        if (!live) return;
-        setSong(s);
-        setTargetKey(s.preferredKey ?? s.keyOverride ?? s.detectedKey ?? "C");
-      })
-      .catch((e: unknown) => {
-        if (live) setError(e instanceof Error ? e.message : "Could not load this song");
-      });
+    load().catch((e: unknown) => {
+      if (live) setError(e instanceof Error ? e.message : "Could not load this song");
+    });
     return () => {
       live = false;
     };
-  }, [songId]);
+  }, [load]);
 
   const writtenKey = song?.keyOverride ?? song?.detectedKey ?? "C";
 
@@ -101,6 +112,36 @@ export function SongPage() {
     }
   };
 
+  const saveOverride = async (
+    at: ChordPosition,
+    value: { correctedSym: string | null; inversion: number | null },
+  ) => {
+    if (!song) return;
+    // The server compares against the unmodified document, so this must be
+    // the raw parsed symbol — not whatever is currently on screen.
+    const originalSym = originalSymAt(song.overrides, song.document, at);
+    if (originalSym === null) return;
+
+    setEditing(null);
+    try {
+      await api.putOverride(song.id, at, { originalSym, ...value });
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not save that change");
+    }
+  };
+
+  const removeOverride = async (at: ChordPosition) => {
+    if (!song) return;
+    setEditing(null);
+    try {
+      await api.deleteOverride(song.id, at);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not remove that change");
+    }
+  };
+
   const correctWritten = async (key: string) => {
     if (!song) return;
     try {
@@ -129,10 +170,37 @@ export function SongPage() {
       </header>
 
       {orphanCount > 0 && (
-        <p className="notice">
-          {orphanCount} saved correction{orphanCount === 1 ? "" : "s"} no longer match this chart
-          and {orphanCount === 1 ? "was" : "were"} not applied.
-        </p>
+        <div className="notice stack">
+          <span>
+            {orphanCount} saved correction{orphanCount === 1 ? "" : "s"} no longer match this chart
+            and {orphanCount === 1 ? "was" : "were"} not applied.
+          </span>
+          {song.orphanedOverrides.map((o, i) => (
+            <div className="row" key={i}>
+              <code>
+                {o.override.originalSym} → {o.override.correctedSym ?? "(inversion only)"}
+              </code>
+              <span className="muted">
+                {o.reason === "symbol-changed"
+                  ? `now reads ${o.foundSym}`
+                  : "position no longer exists"}
+              </span>
+              <button
+                type="button"
+                className="btn"
+                onClick={() =>
+                  void removeOverride({
+                    sectionIdx: o.override.sectionIdx,
+                    lineIdx: o.override.lineIdx,
+                    chordIdx: o.override.chordIdx,
+                  })
+                }
+              >
+                Discard
+              </button>
+            </div>
+          ))}
+        </div>
       )}
 
       <div className="chartbar">
@@ -166,7 +234,24 @@ export function SongPage() {
         </button>
       </div>
 
-      <ChordChart document={transposed} />
+      <ChordChart
+        document={transposed}
+        onChordClick={setEditing}
+        pinnedPositions={song.overrides}
+      />
+
+      {editing && (
+        <ChordEditor
+          symbol={displayedSymbolAt(transposed, editing) ?? ""}
+          targetKey={targetKey}
+          writtenKey={writtenKey}
+          inversion={findOverride(song.overrides, editing)?.inversion ?? null}
+          hasOverride={findOverride(song.overrides, editing) !== undefined}
+          onSave={(value) => void saveOverride(editing, value)}
+          onRemove={() => void removeOverride(editing)}
+          onClose={() => setEditing(null)}
+        />
+      )}
 
       <div className="stack">
         <div className="eyebrow">Chords in this song</div>
