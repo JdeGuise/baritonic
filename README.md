@@ -57,7 +57,6 @@ packages/ug-import     Ultimate Guitar → normalized document
 apps/server            SQLite, REST API, static assets
 apps/web               React frontend
 deploy/                Proxmox LXC provisioning
-docs/superpowers/      design spec and the seven implementation plans
 ```
 
 ## The decisions worth knowing
