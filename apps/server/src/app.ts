@@ -2,6 +2,7 @@ import express, { type Express, type NextFunction, type Request, type Response }
 import type { DatabaseSync } from "node:sqlite";
 import type { FetchLike } from "@music-ui/ug-import";
 import { HttpError, toHttpError } from "./http-errors";
+import { createOverrideRoutes } from "./routes/overrides";
 import { createSongRoutes } from "./routes/songs";
 
 export interface AppDeps {
@@ -18,6 +19,8 @@ export function createApp(deps: AppDeps): Express {
     res.json({ status: "ok" });
   });
 
+  // The more specific path must mount first.
+  app.use("/api/songs/:id/overrides", createOverrideRoutes({ db: deps.db }));
   app.use("/api/songs", createSongRoutes({ db: deps.db, fetchImpl: deps.fetchImpl }));
 
   app.use("/api", (_req, _res, next) => {
