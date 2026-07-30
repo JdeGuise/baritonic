@@ -18,7 +18,9 @@
       "Bash(node -e \"console.log\\('vite', require\\('./node_modules/vite/package.json'\\).version\\)\")",
       "Bash(python3 -m json.tool --compact)",
       "Bash(git add *)",
-      "Bash(git commit -q -m 'feat\\(server\\): static asset serving and entry point *)"
+      "Bash(git commit -q -m 'feat\\(server\\): static asset serving and entry point *)",
+      "Bash(xargs -I{} echo \"act warnings: {}\")",
+      "Bash(git commit *)"
     ]
   }
 }
