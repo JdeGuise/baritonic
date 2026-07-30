@@ -2,6 +2,7 @@ import express, { type Express, type NextFunction, type Request, type Response }
 import type { DatabaseSync } from "node:sqlite";
 import type { FetchLike } from "@music-ui/ug-import";
 import { HttpError, toHttpError } from "./http-errors";
+import { createSongRoutes } from "./routes/songs";
 
 export interface AppDeps {
   db: DatabaseSync;
@@ -17,7 +18,7 @@ export function createApp(deps: AppDeps): Express {
     res.json({ status: "ok" });
   });
 
-  // Routes are mounted here by later tasks.
+  app.use("/api/songs", createSongRoutes({ db: deps.db, fetchImpl: deps.fetchImpl }));
 
   app.use("/api", (_req, _res, next) => {
     next(new HttpError(404, "Not found"));
@@ -33,6 +34,5 @@ export function createApp(deps: AppDeps): Express {
     res.status(httpErr.status).json({ error: httpErr.message, detail: httpErr.detail });
   });
 
-  void deps;
   return app;
 }
