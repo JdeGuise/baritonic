@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import {
   chooseVoicings,
   collectSymbols,
@@ -38,6 +38,7 @@ export function SongPage() {
   const [targetKey, setTargetKey] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [editing, setEditing] = useState<ChordPosition | null>(null);
+  const [printDiagrams, setPrintDiagrams] = useState(true);
 
   const load = useCallback(async () => {
     const s = await api.getSong(songId);
@@ -163,7 +164,12 @@ export function SongPage() {
   const orphanCount = song.orphanedOverrides.length;
 
   return (
-    <div className="stack">
+    <div className={printDiagrams ? "stack" : "stack print-no-diagrams"}>
+      {/* The chart bar is hidden on paper, so the key has to appear here. */}
+      <div className="print-only print-head">
+        {song.artist} — {song.title} · {targetKey}
+      </div>
+
       <header>
         <h1 className="song-title">{song.title}</h1>
         <p className="muted">{song.artist}</p>
@@ -232,6 +238,22 @@ export function SongPage() {
         <button type="button" className="btn" onClick={() => void savePreferred()} disabled={saving}>
           {song.preferredKey === targetKey ? "Saved" : "Save as my key"}
         </button>
+
+        <Link to={`/songs/${song.id}/stage`} className="btn no-print">
+          Stage
+        </Link>
+        <button type="button" className="btn no-print" onClick={() => window.print()}>
+          Print
+        </button>
+        <label className="klabel no-print">
+          <input
+            type="checkbox"
+            checked={printDiagrams}
+            aria-label="Diagrams on paper"
+            onChange={(e) => setPrintDiagrams(e.target.checked)}
+          />{" "}
+          Diagrams on paper
+        </label>
       </div>
 
       <ChordChart

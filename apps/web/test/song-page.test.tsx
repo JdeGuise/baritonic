@@ -387,3 +387,38 @@ describe("SongPage editing", () => {
     );
   });
 });
+
+describe("SongPage stage and print", () => {
+  it("links to the stage view", async () => {
+    vi.spyOn(api, "getSong").mockResolvedValue(detail());
+    show();
+    await screen.findByText("Placeholder Song");
+    expect(screen.getByRole("link", { name: /stage/i })).toHaveAttribute("href", "/songs/1/stage");
+  });
+
+  it("prints on demand", async () => {
+    vi.spyOn(api, "getSong").mockResolvedValue(detail());
+    const print = vi.fn();
+    vi.stubGlobal("print", print);
+    show();
+    await screen.findByText("Placeholder Song");
+    fireEvent.click(screen.getByRole("button", { name: /print/i }));
+    expect(print).toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it("includes diagrams on paper by default", async () => {
+    vi.spyOn(api, "getSong").mockResolvedValue(detail());
+    const { container } = show();
+    await screen.findByText("Placeholder Song");
+    expect(container.querySelector(".print-no-diagrams")).toBeNull();
+  });
+
+  it("can suppress diagrams on paper", async () => {
+    vi.spyOn(api, "getSong").mockResolvedValue(detail());
+    const { container } = show();
+    await screen.findByText("Placeholder Song");
+    fireEvent.click(screen.getByLabelText(/diagrams on paper/i));
+    expect(container.querySelector(".print-no-diagrams")).toBeTruthy();
+  });
+});

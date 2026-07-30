@@ -48,3 +48,48 @@
 @media (prefers-reduced-motion: reduce) {
   .stage-bar { transition: none; }
 }
+
+/* ── print ──────────────────────────────────────────────────────
+   Not unit-testable: jsdom never evaluates @media print. Verified by
+   eye in the browser's print preview. */
+
+.print-only { display: none; }
+
+@media print {
+  /* Paper is white; the screen palette is not. */
+  body { background: #fff; color: #000; font-size: 11pt; }
+
+  .topbar,
+  .chartbar,
+  .no-print,
+  .search,
+  .editor,
+  .notice { display: none !important; }
+
+  .print-only { display: block; }
+  .print-head {
+    font-family: var(--mono);
+    font-weight: 700;
+    margin-bottom: 12pt;
+    padding-bottom: 6pt;
+    border-bottom: 1pt solid #000;
+  }
+
+  .shell { max-width: none; padding: 0; }
+
+  /* Keep a section whole where it fits on the page. */
+  .chart-section { break-inside: avoid; page-break-inside: avoid; }
+  .chart-line { break-inside: avoid; page-break-inside: avoid; }
+
+  .unit-chord { color: #000; font-weight: 700; }
+  .unit-chord.pinned { text-decoration: none; }
+  .eyebrow { color: #000; }
+
+  .pd { break-inside: avoid; page-break-inside: avoid; border-color: #999; }
+  .pd-name { color: #000; }
+  .key.lit { fill: #555; }
+  .key.white { fill: #fff; stroke: #000; }
+  .key.black { fill: #000; }
+
+  .print-no-diagrams .pianos { display: none !important; }
+}
