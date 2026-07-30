@@ -1,6 +1,6 @@
-# @music-ui/web
+# @baritonic/web
 
-React frontend for music-ui.
+React frontend for baritonic.
 
 ## Development
 

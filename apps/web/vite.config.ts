@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
-      "@music-ui/music-core": fileURLToPath(
+      "@baritonic/music-core": fileURLToPath(
         new URL("../../packages/music-core/src/index.ts", import.meta.url),
       ),
     },

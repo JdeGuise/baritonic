@@ -10,7 +10,7 @@ let dir: string;
 let db: DatabaseSync;
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), "music-ui-test-"));
+  dir = mkdtempSync(join(tmpdir(), "baritonic-test-"));
   db = openDatabase(join(dir, "test.db"));
 });
 

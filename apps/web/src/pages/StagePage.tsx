@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { transposeDocument } from "@music-ui/music-core";
+import { transposeDocument } from "@baritonic/music-core";
 import { api } from "../api/client.ts";
 import type { SongDetail } from "../api/types.ts";
 import { ChordChart } from "../components/ChordChart.tsx";

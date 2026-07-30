@@ -1,5 +1,5 @@
 {
-  "name": "@music-ui/server",
+  "name": "@baritonic/server",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -11,8 +11,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@music-ui/music-core": "file:../../packages/music-core",
-    "@music-ui/ug-import": "file:../../packages/ug-import",
+    "@baritonic/music-core": "file:../../packages/music-core",
+    "@baritonic/ug-import": "file:../../packages/ug-import",
     "express": "^5.0.0"
   },
   "devDependencies": {

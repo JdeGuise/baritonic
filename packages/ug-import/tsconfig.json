@@ -10,7 +10,7 @@
     "allowImportingTsExtensions": true,
     "types": ["vitest/globals"],
     "baseUrl": ".",
-    "paths": { "@music-ui/music-core": ["../music-core/src/index.ts"] }
+    "paths": { "@baritonic/music-core": ["../music-core/src/index.ts"] }
   },
   "include": ["src", "test"]
 }

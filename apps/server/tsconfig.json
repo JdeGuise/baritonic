@@ -11,8 +11,8 @@
     "types": ["vitest/globals", "node"],
     "baseUrl": ".",
     "paths": {
-      "@music-ui/music-core": ["../../packages/music-core/src/index.ts"],
-      "@music-ui/ug-import": ["../../packages/ug-import/src/index.ts"]
+      "@baritonic/music-core": ["../../packages/music-core/src/index.ts"],
+      "@baritonic/ug-import": ["../../packages/ug-import/src/index.ts"]
     }
   },
   "include": ["src", "test"]

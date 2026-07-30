@@ -1,4 +1,4 @@
-import type { Voicing } from "@music-ui/music-core";
+import type { Voicing } from "@baritonic/music-core";
 import { layoutKeyboard, type KeyShape } from "../music/keyboard.ts";
 
 export interface PianoDiagramProps {

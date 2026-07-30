@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { Song } from "@music-ui/music-core";
+import type { Song } from "@baritonic/music-core";
 import { toWrittenKey, originalSymAt, findOverride } from "../src/music/editing.ts";
 import type { ChordOverride } from "../src/api/types.ts";
 

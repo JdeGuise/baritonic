@@ -1,4 +1,4 @@
-import { noteSemitone, parseNote } from "@music-ui/music-core";
+import { noteSemitone, parseNote } from "@baritonic/music-core";
 
 /** Conventional key-centre spellings by pitch class. */
 const KEY_NAMES = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];

@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { DatabaseSync } from "node:sqlite";
-import type { ImportResult } from "@music-ui/ug-import";
+import type { ImportResult } from "@baritonic/ug-import";
 import { openDatabase } from "../src/db/connection";
 import { migrate } from "../src/db/migrations";
 
@@ -14,7 +14,7 @@ export interface TempDb {
 /** A fresh migrated database in its own temp directory, so suites never
  *  share state. */
 export function tempDb(): TempDb {
-  const dir = mkdtempSync(join(tmpdir(), "music-ui-test-"));
+  const dir = mkdtempSync(join(tmpdir(), "baritonic-test-"));
   const db = openDatabase(join(dir, "test.db"));
   migrate(db);
   return {

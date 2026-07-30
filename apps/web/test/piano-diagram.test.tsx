@@ -6,7 +6,7 @@ import {
   fingerVoicing,
   spellChordTones,
   noteToString,
-} from "@music-ui/music-core";
+} from "@baritonic/music-core";
 import { PianoDiagram } from "../src/components/PianoDiagram.tsx";
 
 const renderChord = (sym: string, key = "C") => {

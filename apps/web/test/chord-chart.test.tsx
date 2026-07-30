@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
-import type { Song } from "@music-ui/music-core";
-import { transposeDocument } from "@music-ui/music-core";
+import type { Song } from "@baritonic/music-core";
+import { transposeDocument } from "@baritonic/music-core";
 import { ChordChart } from "../src/components/ChordChart.tsx";
 
 const doc: Song = {

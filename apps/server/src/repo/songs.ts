@@ -1,6 +1,6 @@
 import type { DatabaseSync } from "node:sqlite";
-import type { Song } from "@music-ui/music-core";
-import type { ImportResult, SongMeta } from "@music-ui/ug-import";
+import type { Song } from "@baritonic/music-core";
+import type { ImportResult, SongMeta } from "@baritonic/ug-import";
 
 export interface SongRow {
   id: number;

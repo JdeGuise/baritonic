@@ -765,7 +765,7 @@ Expected: FAIL — `../src/pages/StagePage.tsx` unresolved.
 ```tsx
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { transposeDocument } from "@music-ui/music-core";
+import { transposeDocument } from "@baritonic/music-core";
 import { api } from "../api/client.ts";
 import type { SongDetail } from "../api/types.ts";
 import { ChordChart } from "../components/ChordChart.tsx";
@@ -1155,7 +1155,7 @@ The two features in this phase are layout-dependent, so this step is the real te
 
 ```bash
 cd apps/web && npm run build
-cd ../server && rm -rf /tmp/music-ui-stage && DATA_DIR=/tmp/music-ui-stage PORT=4202 npm start
+cd ../server && rm -rf /tmp/baritonic-stage && DATA_DIR=/tmp/baritonic-stage PORT=4202 npm start
 ```
 
 - [ ] **Step 2: Seed a song long enough to scroll**
@@ -1204,7 +1204,7 @@ On `http://127.0.0.1:4202/songs/1`, use the browser's Print preview and confirm:
 - [ ] **Step 5: Clean up and verify every suite**
 
 ```bash
-pkill -f "src/server.ts"; rm -rf /tmp/music-ui-stage /tmp/stage-body.json
+pkill -f "src/server.ts"; rm -rf /tmp/baritonic-stage /tmp/stage-body.json
 ```
 
 Then run `npm test` and `npm run typecheck` in all four packages.

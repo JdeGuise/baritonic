@@ -1,4 +1,4 @@
-import type { Voicing } from "@music-ui/music-core";
+import type { Voicing } from "@baritonic/music-core";
 
 export interface KeyShape {
   semitone: number;

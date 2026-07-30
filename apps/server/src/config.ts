@@ -22,6 +22,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     port,
     dataDir,
     bindAddr: env.BIND_ADDR ?? "127.0.0.1",
-    dbPath: join(dataDir, "music-ui.db"),
+    dbPath: join(dataDir, "baritonic.db"),
   };
 }

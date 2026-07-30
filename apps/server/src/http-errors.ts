@@ -1,4 +1,4 @@
-import { ImportError, describeFailure, type ImportFailure } from "@music-ui/ug-import";
+import { ImportError, describeFailure, type ImportFailure } from "@baritonic/ug-import";
 
 export class HttpError extends Error {
   // Declared explicitly rather than as constructor parameter properties:

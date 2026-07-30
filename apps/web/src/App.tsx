@@ -8,10 +8,11 @@ export function App() {
   return (
     <div className="shell">
       <header className="topbar">
-        {/* The accent span would otherwise split the accessible name into
-            "music - ui"; label it explicitly so it reads as one word. */}
-        <Link to="/" className="brand" aria-label="music-ui">
-          music<span className="sep" aria-hidden="true">-</span>ui
+        {/* Accent the "tonic" half — it is the pun, and tonic is the real
+            word for a key centre. The span would otherwise split the
+            accessible name in two, so label it explicitly. */}
+        <Link to="/" className="brand" aria-label="baritonic">
+          bari<span className="sep">tonic</span>
         </Link>
         <nav className="row">
           <Link to="/import" className="btn pri">

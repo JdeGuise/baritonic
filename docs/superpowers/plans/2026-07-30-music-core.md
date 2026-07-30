@@ -66,7 +66,7 @@ Tests mirror `src/` under `test/`, one file per module, plus `test/transpose.pro
 
 ```json
 {
-  "name": "@music-ui/music-core",
+  "name": "@baritonic/music-core",
   "version": "0.1.0",
   "private": true,
   "type": "module",

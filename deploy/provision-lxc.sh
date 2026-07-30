@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Create a dedicated Debian 12 LXC on Proxmox and deploy music-ui into it.
+# Create a dedicated Debian 12 LXC on Proxmox and deploy baritonic into it.
 # Run this on the Proxmox VE host as root. Nothing else needs to be on the
 # host — the container clones and builds the project itself.
 #
@@ -17,7 +17,7 @@ set -euo pipefail
 
 # ---- Settings (override via environment) -----------------------------------
 CTID="${CTID:-}"                                 # blank = auto-pick next free VMID
-CT_HOSTNAME="${CT_HOSTNAME:-music-ui}"           # container name shown in Proxmox
+CT_HOSTNAME="${CT_HOSTNAME:-baritonic}"           # container name shown in Proxmox
 STORAGE="${STORAGE:-local-lvm}"                  # storage for the container rootfs
 TEMPLATE_STORAGE="${TEMPLATE_STORAGE:-local}"    # storage holding LXC templates
 BRIDGE="${BRIDGE:-vmbr0}"
@@ -27,11 +27,11 @@ SWAP_MB="${SWAP_MB:-512}"
 CORES="${CORES:-2}"
 APP_PORT="${APP_PORT:-4173}"
 NODE_MAJOR="${NODE_MAJOR:-24}"                   # node:sqlite is stable from 24
-REPO="${REPO:-https://github.com/JdeGuise/music-ui}"
+REPO="${REPO:-https://github.com/JdeGuise/baritonic}"
 BRANCH="${BRANCH:-main}"
-APP_DIR="/opt/music-ui"
-DATA_DIR="/var/lib/music-ui"
-SERVICE_USER="music-ui"
+APP_DIR="/opt/baritonic"
+DATA_DIR="/var/lib/baritonic"
+SERVICE_USER="baritonic"
 
 # There is no authentication: the app is single-user and internal-only. It
 # binds 0.0.0.0 so it is reachable on the LAN, which is stated here rather
@@ -124,7 +124,7 @@ fi
 
 read -r -d '' UNIT <<UNITEOF || true
 [Unit]
-Description=music-ui — personal chord chart reader
+Description=baritonic — personal chord chart reader
 After=network-online.target
 Wants=network-online.target
 
@@ -154,7 +154,7 @@ UNITEOF
 read -r -d '' PROVISION <<PROVEOF || true
 #!/usr/bin/env bash
 #
-# Installs and updates music-ui inside the container. Idempotent: re-run it
+# Installs and updates baritonic inside the container. Idempotent: re-run it
 # to deploy a new release. The database in ${DATA_DIR} is never touched.
 #
 set -euo pipefail
@@ -163,7 +163,7 @@ export DEBIAN_FRONTEND=noninteractive
 apt-get update -qq
 apt-get install -y -qq curl ca-certificates git gnupg
 
-# NodeSource: Debian's own node is far too old. music-ui needs node:sqlite
+# NodeSource: Debian's own node is far too old. baritonic needs node:sqlite
 # from the standard library, which is stable from ${NODE_MAJOR}.
 if ! command -v node >/dev/null || [ "\$(node -p 'process.versions.node.split(".")[0]')" -lt ${NODE_MAJOR} ]; then
   curl -fsSL "https://deb.nodesource.com/setup_${NODE_MAJOR}.x" | bash - >/dev/null
@@ -198,41 +198,41 @@ npm ci --omit=dev --no-audit --no-fund --silent
 # music-core, and Node resolves that from the package's real path, walking
 # up from packages/ug-import/. A link directory at the repo root sits on
 # that path, so it resolves from anywhere in the tree.
-mkdir -p "${APP_DIR}/node_modules/@music-ui"
-ln -sfn "${APP_DIR}/packages/music-core" "${APP_DIR}/node_modules/@music-ui/music-core"
-ln -sfn "${APP_DIR}/packages/ug-import"  "${APP_DIR}/node_modules/@music-ui/ug-import"
+mkdir -p "${APP_DIR}/node_modules/@baritonic"
+ln -sfn "${APP_DIR}/packages/music-core" "${APP_DIR}/node_modules/@baritonic/music-core"
+ln -sfn "${APP_DIR}/packages/ug-import"  "${APP_DIR}/node_modules/@baritonic/ug-import"
 
 mkdir -p "${DATA_DIR}"
 chown -R ${SERVICE_USER}:${SERVICE_USER} "${APP_DIR}" "${DATA_DIR}"
 
-install -m 644 /root/music-ui.service /etc/systemd/system/music-ui.service
+install -m 644 /root/baritonic.service /etc/systemd/system/baritonic.service
 systemctl daemon-reload
-systemctl enable music-ui >/dev/null 2>&1 || true
-systemctl restart music-ui
+systemctl enable baritonic >/dev/null 2>&1 || true
+systemctl restart baritonic
 PROVEOF
 
 if [ "$DRY_RUN" -eq 1 ]; then
   echo
-  echo "--- /etc/systemd/system/music-ui.service ---"
+  echo "--- /etc/systemd/system/baritonic.service ---"
   printf '%s\n' "$UNIT" | sed 's/^/   | /'
   echo
   echo "--- /root/provision.sh ---"
   printf '%s\n' "$PROVISION" | sed 's/^/   | /'
   echo
 else
-  printf '%s\n' "$UNIT" > /tmp/music-ui.service
-  printf '%s\n' "$PROVISION" > /tmp/music-ui-provision.sh
+  printf '%s\n' "$UNIT" > /tmp/baritonic.service
+  printf '%s\n' "$PROVISION" > /tmp/baritonic-provision.sh
 fi
 
 say "Pushing files into the container..."
-run pct push "$CTID" /tmp/music-ui.service        /root/music-ui.service
-run pct push "$CTID" /tmp/music-ui-provision.sh   /root/provision.sh
+run pct push "$CTID" /tmp/baritonic.service        /root/baritonic.service
+run pct push "$CTID" /tmp/baritonic-provision.sh   /root/provision.sh
 
 say "Provisioning (Node ${NODE_MAJOR}, clone, build, systemd)..."
 run pct exec "$CTID" -- bash /root/provision.sh
 
 if [ "$DRY_RUN" -eq 0 ]; then
-  rm -f /tmp/music-ui.service /tmp/music-ui-provision.sh
+  rm -f /tmp/baritonic.service /tmp/baritonic-provision.sh
 fi
 
 # ---- Wait for the service to answer ----------------------------------------
@@ -245,8 +245,8 @@ else
     tries=$((tries + 1))
     if [ "$tries" -gt 60 ]; then
       echo
-      pct exec "$CTID" -- journalctl -u music-ui -n 40 --no-pager || true
-      echo "music-ui did not become healthy. Recent log above."
+      pct exec "$CTID" -- journalctl -u baritonic -n 40 --no-pager || true
+      echo "baritonic did not become healthy. Recent log above."
       exit 1
     fi
     sleep 1
@@ -257,7 +257,7 @@ fi
 cat <<DONE
 
 ============================================================
- music-ui deployed in LXC ${CTID} (${CT_HOSTNAME})
+ baritonic deployed in LXC ${CTID} (${CT_HOSTNAME})
 
    Web UI:   http://${IP}:${APP_PORT}
 
@@ -265,10 +265,10 @@ cat <<DONE
    Keep it on a trusted network.
 
  Useful commands (on the Proxmox host):
-   Logs:     pct exec ${CTID} -- journalctl -u music-ui -f
-   Restart:  pct exec ${CTID} -- systemctl restart music-ui
+   Logs:     pct exec ${CTID} -- journalctl -u baritonic -f
+   Restart:  pct exec ${CTID} -- systemctl restart baritonic
    Update:   pct exec ${CTID} -- bash /root/provision.sh
-   Back up:  pct pull ${CTID} ${DATA_DIR}/music-ui.db ./music-ui-backup.db
+   Back up:  pct pull ${CTID} ${DATA_DIR}/baritonic.db ./baritonic-backup.db
 
  Update pulls the latest ${BRANCH}, rebuilds, and restarts.
  Your library in ${DATA_DIR} is never touched.

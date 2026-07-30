@@ -7,15 +7,15 @@ describe("loadConfig", () => {
     expect(c.port).toBe(4173);
     expect(c.bindAddr).toBe("127.0.0.1");
     expect(c.dataDir).toBe("./data");
-    expect(c.dbPath).toBe("data/music-ui.db");
+    expect(c.dbPath).toBe("data/baritonic.db");
   });
 
   it("reads overrides from the environment", () => {
-    const c = loadConfig({ PORT: "8080", DATA_DIR: "/var/lib/music-ui", BIND_ADDR: "0.0.0.0" });
+    const c = loadConfig({ PORT: "8080", DATA_DIR: "/var/lib/baritonic", BIND_ADDR: "0.0.0.0" });
     expect(c.port).toBe(8080);
-    expect(c.dataDir).toBe("/var/lib/music-ui");
+    expect(c.dataDir).toBe("/var/lib/baritonic");
     expect(c.bindAddr).toBe("0.0.0.0");
-    expect(c.dbPath).toBe("/var/lib/music-ui/music-ui.db");
+    expect(c.dbPath).toBe("/var/lib/baritonic/baritonic.db");
   });
 
   it("rejects a non-numeric port", () => {

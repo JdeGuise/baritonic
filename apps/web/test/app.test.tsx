@@ -20,7 +20,7 @@ describe("App shell", () => {
       </MemoryRouter>,
     );
     // findBy* lets the LibraryPage load settle inside act before asserting.
-    expect(await screen.findByRole("link", { name: /music-ui/i })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: /baritonic/i })).toBeInTheDocument();
     // Exact name: the empty library also renders "Import your first song".
     expect(screen.getByRole("link", { name: "Import" })).toBeInTheDocument();
     expect(await screen.findByText(/no songs yet/i)).toBeInTheDocument();

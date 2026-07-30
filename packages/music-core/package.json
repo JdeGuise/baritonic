@@ -1,5 +1,5 @@
 {
-  "name": "@music-ui/music-core",
+  "name": "@baritonic/music-core",
   "version": "0.1.0",
   "private": true,
   "type": "module",

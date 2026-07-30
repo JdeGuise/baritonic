@@ -1,4 +1,4 @@
-# Deploying music-ui to Proxmox
+# Deploying baritonic to Proxmox
 
 Copy **one file** to the Proxmox host and run it. Nothing else needs to be
 there — the container clones and builds the project itself, so the
@@ -31,12 +31,12 @@ dependencies, and restarts the service. It is the same code path as the
 initial install, so there is no second script to drift out of date.
 
 **Your library is never touched.** The database lives in
-`/var/lib/music-ui`, outside the application directory, and nothing in the
+`/var/lib/baritonic`, outside the application directory, and nothing in the
 update path writes there.
 
 Worth doing first, since there is no rollback mechanism:
 
-    pct pull 210 /var/lib/music-ui/music-ui.db ./music-ui-backup-$(date +%F).db
+    pct pull 210 /var/lib/baritonic/baritonic.db ./baritonic-backup-$(date +%F).db
 
 To roll back, set `BRANCH` to a tag or commit and re-run the provision
 script.
@@ -48,7 +48,7 @@ Everything is an environment variable; `--help` lists them. Set them inline:
     CT_HOSTNAME=music STORAGE=local-zfs MEMORY_MB=2048 ./provision-lxc.sh
 
     CTID=<next free>          container id, auto-picked if unset
-    CT_HOSTNAME=music-ui
+    CT_HOSTNAME=baritonic
     STORAGE=local-lvm         storage for the container rootfs
     TEMPLATE_STORAGE=local    storage holding LXC templates
     BRIDGE=vmbr0
@@ -57,7 +57,7 @@ Everything is an environment variable; `--help` lists them. Set them inline:
     CORES=2
     APP_PORT=4173
     NODE_MAJOR=24             below this, node:sqlite is unavailable
-    REPO=https://github.com/JdeGuise/music-ui
+    REPO=https://github.com/JdeGuise/baritonic
     BRANCH=main
 
 The Debian 12 template is resolved and downloaded automatically — the newest
@@ -66,9 +66,9 @@ current.
 
 ## Operating it
 
-    pct exec 210 -- systemctl status music-ui
-    pct exec 210 -- journalctl -u music-ui -f
-    pct exec 210 -- systemctl restart music-ui
+    pct exec 210 -- systemctl status baritonic
+    pct exec 210 -- journalctl -u baritonic -f
+    pct exec 210 -- systemctl restart baritonic
 
 ## Notes
 
@@ -91,7 +91,7 @@ and in CI, never at runtime. This is also why `NODE_MAJOR` defaults to 24.
 `apps/server/node_modules`, which resolves them for the server — but
 `ug-import`'s own source imports `music-core`, and Node resolves that from
 the package's real path, walking up from `packages/ug-import/`. The
-provision script creates `node_modules/@music-ui/*` at the repo root, which
+provision script creates `node_modules/@baritonic/*` at the repo root, which
 is on that upward path. Without it the service does not start.
 
 ## Testing the script

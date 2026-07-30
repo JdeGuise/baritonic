@@ -1,4 +1,4 @@
-import type { Song } from "@music-ui/music-core";
+import type { Song } from "@baritonic/music-core";
 
 export interface SongSummary {
   id: number;

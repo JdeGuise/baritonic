@@ -1,7 +1,7 @@
 import { Router } from "express";
 import type { DatabaseSync } from "node:sqlite";
-import { parseNote } from "@music-ui/music-core";
-import { importFromText, importFromUrl, type FetchLike } from "@music-ui/ug-import";
+import { parseNote } from "@baritonic/music-core";
+import { importFromText, importFromUrl, type FetchLike } from "@baritonic/ug-import";
 import { applyOverrides } from "../overlay.ts";
 import { HttpError } from "../http-errors.ts";
 import { createOverrideRepo } from "../repo/overrides.ts";
