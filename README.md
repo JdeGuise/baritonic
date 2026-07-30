@@ -94,7 +94,7 @@ deploy is boring.
 
 ## Testing
 
-409 tests across four packages, plus 25 assertions on the deploy script.
+409 tests across four packages, plus 36 assertions on the deploy script.
 
 ```bash
 for p in packages/music-core packages/ug-import apps/server apps/web; do

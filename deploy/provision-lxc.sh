@@ -1,252 +1,128 @@
 #!/usr/bin/env bash
 #
-# Provision music-ui into an unprivileged Proxmox LXC container.
+# Create a dedicated Debian 12 LXC on Proxmox and deploy music-ui into it.
+# Run this on the Proxmox VE host as root. Nothing else needs to be on the
+# host — the container clones and builds the project itself.
 #
-# Run this ON THE PROXMOX HOST as root. Re-running redeploys the
-# application into the existing container rather than recreating it.
+#   chmod +x provision-lxc.sh
+#   ./provision-lxc.sh
 #
-#   ./provision-lxc.sh --dry-run     # print the plan, change nothing
-#   ./provision-lxc.sh               # do it
+# Override any default inline, e.g.:
+#   CT_HOSTNAME=music STORAGE=local-zfs MEMORY_MB=2048 ./provision-lxc.sh
 #
-set -Eeuo pipefail
+# Re-running the provision step is the supported update path:
+#   pct exec <CTID> -- bash /root/provision.sh
+#
+set -euo pipefail
 
-# ── configuration ───────────────────────────────────────────────
-# Every value is overridable from the environment and echoed back in the
-# summary, so a deployment is reproducible from its own output.
-
-CTID="${CTID:-210}"
-CT_HOSTNAME="${CT_HOSTNAME:-music-ui}"
-TEMPLATE_STORAGE="${TEMPLATE_STORAGE:-local}"
-TEMPLATE="${TEMPLATE:-debian-12-standard_12.7-1_amd64.tar.zst}"
-ROOTFS_STORAGE="${ROOTFS_STORAGE:-local-lvm}"
-DISK_GB="${DISK_GB:-4}"
+# ---- Settings (override via environment) -----------------------------------
+CTID="${CTID:-}"                                 # blank = auto-pick next free VMID
+CT_HOSTNAME="${CT_HOSTNAME:-music-ui}"           # container name shown in Proxmox
+STORAGE="${STORAGE:-local-lvm}"                  # storage for the container rootfs
+TEMPLATE_STORAGE="${TEMPLATE_STORAGE:-local}"    # storage holding LXC templates
+BRIDGE="${BRIDGE:-vmbr0}"
+DISK_GB="${DISK_GB:-6}"                          # the web build's node_modules is ~300MB
 MEMORY_MB="${MEMORY_MB:-1024}"
 SWAP_MB="${SWAP_MB:-512}"
 CORES="${CORES:-2}"
-BRIDGE="${BRIDGE:-vmbr0}"
-IPV4="${IPV4:-dhcp}"
-GATEWAY="${GATEWAY:-}"
-
 APP_PORT="${APP_PORT:-4173}"
-APP_DIR="${APP_DIR:-/opt/music-ui}"
-DATA_DIR="${DATA_DIR:-/var/lib/music-ui}"
-SERVICE_USER="${SERVICE_USER:-music-ui}"
-SERVICE_NAME="music-ui.service"
-NODE_MAJOR="${NODE_MAJOR:-24}"
+NODE_MAJOR="${NODE_MAJOR:-24}"                   # node:sqlite is stable from 24
+REPO="${REPO:-https://github.com/JdeGuise/music-ui}"
+BRANCH="${BRANCH:-main}"
+APP_DIR="/opt/music-ui"
+DATA_DIR="/var/lib/music-ui"
+SERVICE_USER="music-ui"
+
+# There is no authentication: the app is single-user and internal-only. It
+# binds 0.0.0.0 so it is reachable on the LAN, which is stated here rather
+# than inherited — the app itself defaults to loopback.
+BIND_ADDR="${BIND_ADDR:-0.0.0.0}"
 
 DRY_RUN=0
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# ----------------------------------------------------------------------------
 
-# ── plumbing ────────────────────────────────────────────────────
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --dry-run) DRY_RUN=1; shift ;;
+    --help|-h)
+      sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'
+      echo
+      echo "Settings (current defaults):"
+      echo "  CTID=${CTID:-<next free>}  CT_HOSTNAME=$CT_HOSTNAME  STORAGE=$STORAGE"
+      echo "  BRIDGE=$BRIDGE  DISK_GB=$DISK_GB  MEMORY_MB=$MEMORY_MB  CORES=$CORES"
+      echo "  APP_PORT=$APP_PORT  NODE_MAJOR=$NODE_MAJOR  BRANCH=$BRANCH"
+      echo "  REPO=$REPO"
+      exit 0 ;;
+    *) echo "Unknown argument: $1 (try --help)" >&2; exit 1 ;;
+  esac
+done
 
-log() { printf '\033[1;35m==\033[0m %s\n' "$*"; }
-info() { printf '   %s\n' "$*"; }
-die() {
-  printf '\033[1;31m!!\033[0m %s\n' "$*" >&2
-  exit 1
-}
-
-usage() {
-  cat <<EOF
-Provision music-ui into a Proxmox LXC container. Run on the Proxmox host.
-
-Usage: $(basename "$0") [--dry-run] [--help]
-
-  --dry-run   Print every command that would run, and change nothing.
-  --help      This text.
-
-Configuration (environment variables, current defaults shown):
-
-  CTID=$CTID                       container id
-  CT_HOSTNAME=$CT_HOSTNAME
-  TEMPLATE_STORAGE=$TEMPLATE_STORAGE
-  TEMPLATE=$TEMPLATE
-  ROOTFS_STORAGE=$ROOTFS_STORAGE
-  DISK_GB=$DISK_GB
-  MEMORY_MB=$MEMORY_MB
-  SWAP_MB=$SWAP_MB
-  CORES=$CORES
-  BRIDGE=$BRIDGE
-  IPV4=$IPV4                       "dhcp" or CIDR, e.g. 192.168.1.50/24
-  GATEWAY=$GATEWAY                 required when IPV4 is a CIDR
-
-  APP_PORT=$APP_PORT
-  APP_DIR=$APP_DIR
-  DATA_DIR=$DATA_DIR
-  SERVICE_USER=$SERVICE_USER
-  NODE_MAJOR=$NODE_MAJOR
-EOF
-}
-
-# Every mutating command goes through here. Nothing bypasses it, or
-# --dry-run would misreport what a real run does.
+# Every command that changes the host or container goes through here, so
+# --dry-run reports exactly what a real run would do.
 run() {
-  if [[ $DRY_RUN -eq 1 ]]; then
-    printf '   \033[2m$\033[0m %s\n' "$*"
+  if [ "$DRY_RUN" -eq 1 ]; then
+    printf '   $ %s\n' "$*"
   else
     "$@"
   fi
 }
 
-# Run a shell command inside the container.
-in_ct() {
-  run pct exec "$CTID" -- bash -lc "$*"
-}
+say() { printf '>> %s\n' "$*"; }
 
-# Write a file inside the container from a string.
-write_in_ct() {
-  local path="$1" content="$2"
-  if [[ $DRY_RUN -eq 1 ]]; then
-    printf '   \033[2m$\033[0m write %s in ct %s:\n' "$path" "$CTID"
-    sed 's/^/       | /' <<<"$content"
+# ---- Resolve the template --------------------------------------------------
+say "Resolving template..."
+if [ "$DRY_RUN" -eq 1 ]; then
+  TEMPLATE_FILE="debian-12-standard_<latest>_amd64.tar.zst"
+  printf '   $ pveam update\n'
+  printf '   $ pveam available --section system | latest debian-12-standard\n'
+  printf '   $ pveam download %s %s   (if absent)\n' "$TEMPLATE_STORAGE" "$TEMPLATE_FILE"
+else
+  pveam update >/dev/null
+  TEMPLATE_FILE="$(pveam available --section system | awk '/debian-12-standard/ {print $2}' | sort -V | tail -n1)"
+  [ -n "$TEMPLATE_FILE" ] || { echo "No debian-12-standard template found."; exit 1; }
+  if ! pveam list "$TEMPLATE_STORAGE" | grep -q "$TEMPLATE_FILE"; then
+    say "Downloading $TEMPLATE_FILE to $TEMPLATE_STORAGE..."
+    pveam download "$TEMPLATE_STORAGE" "$TEMPLATE_FILE"
+  fi
+fi
+TEMPLATE_REF="${TEMPLATE_STORAGE}:vztmpl/${TEMPLATE_FILE}"
+
+# ---- Create the container --------------------------------------------------
+if [ -z "$CTID" ]; then
+  if [ "$DRY_RUN" -eq 1 ]; then
+    CTID="<next free vmid>"
   else
-    local tmp
-    tmp="$(mktemp)"
-    printf '%s\n' "$content" >"$tmp"
-    pct push "$CTID" "$tmp" "$path"
-    rm -f "$tmp"
+    CTID="$(pvesh get /cluster/nextid)"
   fi
-}
+fi
 
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-  --dry-run)
-    DRY_RUN=1
-    shift
-    ;;
-  --help | -h)
-    usage
-    exit 0
-    ;;
-  *) die "Unknown argument: $1 (try --help)" ;;
-  esac
-done
+say "Creating LXC $CTID ($CT_HOSTNAME)..."
+run pct create "$CTID" "$TEMPLATE_REF" \
+  --hostname "$CT_HOSTNAME" \
+  --cores "$CORES" --memory "$MEMORY_MB" --swap "$SWAP_MB" \
+  --rootfs "${STORAGE}:${DISK_GB}" \
+  --net0 "name=eth0,bridge=${BRIDGE},ip=dhcp" \
+  --unprivileged 1 --onboot 1 --start 1
 
-# ── stages (filled in by later tasks) ───────────────────────────
+say "Waiting for the container to boot and get an IP..."
+if [ "$DRY_RUN" -eq 1 ]; then
+  IP="<container-ip>"
+  printf '   $ wait for pct status running, then hostname -I\n'
+else
+  until [ "$(pct status "$CTID")" = "status: running" ]; do sleep 1; done
+  IP=""
+  for _ in $(seq 1 30); do
+    IP="$(pct exec "$CTID" -- bash -c "hostname -I 2>/dev/null | awk '{print \$1}'" || true)"
+    [ -n "$IP" ] && break
+    sleep 2
+  done
+  [ -n "$IP" ] || { echo "Container did not get an IP; check your bridge/DHCP."; exit 1; }
+  say "Container IP: $IP"
+fi
 
-preflight() {
-  log "Preflight"
+# ---- Files staged on the host, pushed into the container -------------------
 
-  if [[ $DRY_RUN -eq 0 ]]; then
-    [[ $EUID -eq 0 ]] || die "Run as root on the Proxmox host."
-    command -v pct >/dev/null || die "pct not found — is this a Proxmox host?"
-  fi
-
-  if [[ "$IPV4" != "dhcp" && -z "$GATEWAY" ]]; then
-    die "GATEWAY is required when IPV4 is a static CIDR ($IPV4)."
-  fi
-
-  [[ -d "$REPO_ROOT/apps/server/src" ]] || die "Cannot find the project at $REPO_ROOT"
-
-  info "host:      $(hostname 2>/dev/null || echo unknown)"
-  info "container: $CTID ($CT_HOSTNAME)"
-  info "network:   $IPV4 on $BRIDGE${GATEWAY:+ via $GATEWAY}"
-}
-
-container_exists() {
-  [[ $DRY_RUN -eq 1 ]] && return 1
-  pct status "$CTID" >/dev/null 2>&1
-}
-
-ensure_container() {
-  if container_exists; then
-    log "Container $CTID exists — redeploying into it"
-  else
-    log "Creating container $CTID"
-
-    local net="name=eth0,bridge=$BRIDGE,ip=$IPV4"
-    [[ -n "$GATEWAY" ]] && net="$net,gw=$GATEWAY"
-
-    run pct create "$CTID" "$TEMPLATE_STORAGE:vztmpl/$TEMPLATE" \
-      --hostname "$CT_HOSTNAME" \
-      --unprivileged 1 \
-      --features nesting=1 \
-      --cores "$CORES" \
-      --memory "$MEMORY_MB" \
-      --swap "$SWAP_MB" \
-      --rootfs "$ROOTFS_STORAGE:$DISK_GB" \
-      --net0 "$net" \
-      --onboot 1 \
-      --description "music-ui — personal chord chart reader"
-  fi
-
-  log "Starting container"
-  run pct start "$CTID" || true
-
-  # pct exec fails until the container's init has come up.
-  if [[ $DRY_RUN -eq 0 ]]; then
-    local tries=0
-    until pct exec "$CTID" -- true 2>/dev/null; do
-      tries=$((tries + 1))
-      [[ $tries -gt 30 ]] && die "Container $CTID did not become ready."
-      sleep 1
-    done
-  else
-    info "(would wait for the container to accept commands)"
-  fi
-}
-provision_base() {
-  log "Installing base packages and Node $NODE_MAJOR"
-
-  in_ct "export DEBIAN_FRONTEND=noninteractive && apt-get update -qq"
-  in_ct "export DEBIAN_FRONTEND=noninteractive && apt-get install -y -qq ca-certificates curl gnupg tar"
-
-  # NodeSource: Debian's own node is far too old for node:sqlite, which
-  # the database layer depends on being in the standard library.
-  in_ct "if ! command -v node >/dev/null || [ \"\$(node -p 'process.versions.node.split(\".\")[0]')\" -lt $NODE_MAJOR ]; then
-           curl -fsSL https://deb.nodesource.com/setup_${NODE_MAJOR}.x | bash - &&
-           export DEBIAN_FRONTEND=noninteractive && apt-get install -y -qq nodejs;
-         fi"
-  in_ct "node --version && npm --version"
-
-  log "Creating service user and directories"
-  in_ct "id -u $SERVICE_USER >/dev/null 2>&1 || useradd --system --create-home --home-dir /var/lib/$SERVICE_USER --shell /usr/sbin/nologin $SERVICE_USER"
-  in_ct "mkdir -p $APP_DIR $DATA_DIR"
-  in_ct "chown -R $SERVICE_USER:$SERVICE_USER $DATA_DIR"
-}
-deploy_release() {
-  log "Building the web app"
-  run bash -c "cd '$REPO_ROOT/apps/web' && npm ci --silent && npm run build --silent"
-
-  log "Packaging the release"
-  # Exactly the paths apps/server resolves: its own source, the two
-  # workspace packages it imports through file:, and the web build.
-  local tarball="/tmp/music-ui-release.tar.gz"
-  run bash -c "cd '$REPO_ROOT' && tar czf '$tarball' \
-    packages/music-core/src packages/music-core/package.json \
-    packages/ug-import/src packages/ug-import/package.json \
-    apps/server/src apps/server/package.json apps/server/package-lock.json \
-    apps/web/dist"
-
-  log "Pushing the release into the container"
-  in_ct "rm -rf $APP_DIR/packages $APP_DIR/apps && mkdir -p $APP_DIR"
-  run pct push "$CTID" "$tarball" "/tmp/music-ui-release.tar.gz"
-  in_ct "tar xzf /tmp/music-ui-release.tar.gz -C $APP_DIR && rm -f /tmp/music-ui-release.tar.gz"
-
-  log "Installing production dependencies"
-  # A pure-JavaScript tree: node:sqlite is in the standard library, so
-  # there is nothing here to compile.
-  in_ct "cd $APP_DIR/apps/server && npm ci --omit=dev --silent"
-
-  # npm links the workspace packages into apps/server/node_modules, which
-  # resolves them for the server itself — but ug-import's own source also
-  # imports music-core, and Node resolves that from the package's real
-  # path, walking up from packages/ug-import/. A link directory at the
-  # app root is on that upward path, so it resolves from anywhere.
-  in_ct "mkdir -p $APP_DIR/node_modules/@music-ui &&
-         ln -sfn $APP_DIR/packages/music-core $APP_DIR/node_modules/@music-ui/music-core &&
-         ln -sfn $APP_DIR/packages/ug-import  $APP_DIR/node_modules/@music-ui/ug-import"
-
-  in_ct "chown -R $SERVICE_USER:$SERVICE_USER $APP_DIR"
-
-  run rm -f "$tarball"
-}
-install_service() {
-  log "Installing $SERVICE_NAME"
-
-  local unit
-  unit="$(
-    cat <<EOF
+read -r -d '' UNIT <<UNITEOF || true
 [Unit]
 Description=music-ui — personal chord chart reader
 After=network-online.target
@@ -254,98 +130,147 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-User=$SERVICE_USER
-WorkingDirectory=$APP_DIR/apps/server
+User=${SERVICE_USER}
+WorkingDirectory=${APP_DIR}/apps/server
 Environment=NODE_ENV=production
-Environment=PORT=$APP_PORT
-Environment=BIND_ADDR=0.0.0.0
-Environment=DATA_DIR=$DATA_DIR
+Environment=PORT=${APP_PORT}
+Environment=BIND_ADDR=${BIND_ADDR}
+Environment=DATA_DIR=${DATA_DIR}
 ExecStart=/usr/bin/node --disable-warning=ExperimentalWarning --experimental-strip-types src/server.ts
 Restart=on-failure
-RestartSec=3
+RestartSec=5
 
 # The service needs nothing beyond its own data directory.
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=$DATA_DIR
+ReadWritePaths=${DATA_DIR}
 
 [Install]
 WantedBy=multi-user.target
-EOF
-  )"
+UNITEOF
 
-  write_in_ct "/etc/systemd/system/$SERVICE_NAME" "$unit"
-  in_ct "systemctl daemon-reload"
-  in_ct "systemctl enable $SERVICE_NAME"
-  in_ct "systemctl restart $SERVICE_NAME"
-}
+read -r -d '' PROVISION <<PROVEOF || true
+#!/usr/bin/env bash
+#
+# Installs and updates music-ui inside the container. Idempotent: re-run it
+# to deploy a new release. The database in ${DATA_DIR} is never touched.
+#
+set -euo pipefail
+export DEBIAN_FRONTEND=noninteractive
 
-container_ip() {
-  if [[ $DRY_RUN -eq 1 ]]; then
-    echo "<container-ip>"
-  else
-    pct exec "$CTID" -- hostname -I 2>/dev/null | awk '{print $1}'
-  fi
-}
+apt-get update -qq
+apt-get install -y -qq curl ca-certificates git gnupg
 
-wait_healthy() {
-  log "Waiting for /healthz"
+# NodeSource: Debian's own node is far too old. music-ui needs node:sqlite
+# from the standard library, which is stable from ${NODE_MAJOR}.
+if ! command -v node >/dev/null || [ "\$(node -p 'process.versions.node.split(".")[0]')" -lt ${NODE_MAJOR} ]; then
+  curl -fsSL "https://deb.nodesource.com/setup_${NODE_MAJOR}.x" | bash - >/dev/null
+  apt-get install -y -qq nodejs
+fi
 
-  if [[ $DRY_RUN -eq 1 ]]; then
-    info "\$ curl -fsS http://<container-ip>:$APP_PORT/healthz"
-    return 0
-  fi
+id -u ${SERVICE_USER} >/dev/null 2>&1 || \\
+  useradd --system --create-home --home-dir /var/lib/${SERVICE_USER} --shell /usr/sbin/nologin ${SERVICE_USER}
 
-  local ip tries=0
-  ip="$(container_ip)"
-  [[ -n "$ip" ]] || die "Could not determine the container's IP address."
+# Clone, or fast-forward an existing checkout.
+if [ -d "${APP_DIR}/.git" ]; then
+  git -C "${APP_DIR}" fetch --depth 1 origin ${BRANCH}
+  git -C "${APP_DIR}" reset --hard origin/${BRANCH}
+else
+  rm -rf "${APP_DIR}"
+  git clone --depth 1 --branch ${BRANCH} "${REPO}" "${APP_DIR}"
+fi
 
-  until curl -fsS "http://$ip:$APP_PORT/healthz" >/dev/null 2>&1; do
+# The web app is built here rather than on the Proxmox host, so the
+# hypervisor needs no toolchain. devDependencies are required to build.
+cd "${APP_DIR}/apps/web"
+npm ci --no-audit --no-fund --silent
+npm run build --silent
+
+# Server dependencies only. node:sqlite is in the standard library, so this
+# tree is pure JavaScript and there is nothing to compile.
+cd "${APP_DIR}/apps/server"
+npm ci --omit=dev --no-audit --no-fund --silent
+
+# npm links the workspace packages into apps/server/node_modules, which
+# resolves them for the server itself — but ug-import's own source imports
+# music-core, and Node resolves that from the package's real path, walking
+# up from packages/ug-import/. A link directory at the repo root sits on
+# that path, so it resolves from anywhere in the tree.
+mkdir -p "${APP_DIR}/node_modules/@music-ui"
+ln -sfn "${APP_DIR}/packages/music-core" "${APP_DIR}/node_modules/@music-ui/music-core"
+ln -sfn "${APP_DIR}/packages/ug-import"  "${APP_DIR}/node_modules/@music-ui/ug-import"
+
+mkdir -p "${DATA_DIR}"
+chown -R ${SERVICE_USER}:${SERVICE_USER} "${APP_DIR}" "${DATA_DIR}"
+
+install -m 644 /root/music-ui.service /etc/systemd/system/music-ui.service
+systemctl daemon-reload
+systemctl enable music-ui >/dev/null 2>&1 || true
+systemctl restart music-ui
+PROVEOF
+
+if [ "$DRY_RUN" -eq 1 ]; then
+  echo
+  echo "--- /etc/systemd/system/music-ui.service ---"
+  printf '%s\n' "$UNIT" | sed 's/^/   | /'
+  echo
+  echo "--- /root/provision.sh ---"
+  printf '%s\n' "$PROVISION" | sed 's/^/   | /'
+  echo
+else
+  printf '%s\n' "$UNIT" > /tmp/music-ui.service
+  printf '%s\n' "$PROVISION" > /tmp/music-ui-provision.sh
+fi
+
+say "Pushing files into the container..."
+run pct push "$CTID" /tmp/music-ui.service        /root/music-ui.service
+run pct push "$CTID" /tmp/music-ui-provision.sh   /root/provision.sh
+
+say "Provisioning (Node ${NODE_MAJOR}, clone, build, systemd)..."
+run pct exec "$CTID" -- bash /root/provision.sh
+
+if [ "$DRY_RUN" -eq 0 ]; then
+  rm -f /tmp/music-ui.service /tmp/music-ui-provision.sh
+fi
+
+# ---- Wait for the service to answer ----------------------------------------
+say "Waiting for /healthz..."
+if [ "$DRY_RUN" -eq 1 ]; then
+  printf '   $ curl -fsS http://<container-ip>:%s/healthz\n' "$APP_PORT"
+else
+  tries=0
+  until curl -fsS "http://${IP}:${APP_PORT}/healthz" >/dev/null 2>&1; do
     tries=$((tries + 1))
-    if [[ $tries -gt 45 ]]; then
-      printf '\n'
-      pct exec "$CTID" -- journalctl -u "$SERVICE_NAME" -n 40 --no-pager || true
-      die "$SERVICE_NAME did not become healthy. Recent log above."
+    if [ "$tries" -gt 60 ]; then
+      echo
+      pct exec "$CTID" -- journalctl -u music-ui -n 40 --no-pager || true
+      echo "music-ui did not become healthy. Recent log above."
+      exit 1
     fi
     sleep 1
   done
-  info "healthy after ${tries}s"
-}
+  say "healthy after ${tries}s"
+fi
 
-summary() {
-  local ip
-  ip="$(container_ip)"
+cat <<DONE
 
-  log "Done"
-  cat <<EOF
+============================================================
+ music-ui deployed in LXC ${CTID} (${CT_HOSTNAME})
 
-   music-ui is running at   http://${ip}:${APP_PORT}
+   Web UI:   http://${IP}:${APP_PORT}
 
-   container   $CTID ($CT_HOSTNAME)
-   app         $APP_DIR
-   database    $DATA_DIR/music-ui.db
-   service     $SERVICE_NAME as $SERVICE_USER
+   No login: the app is single-user and has no authentication.
+   Keep it on a trusted network.
 
-   Logs        pct exec $CTID -- journalctl -u $SERVICE_NAME -f
-   Restart     pct exec $CTID -- systemctl restart $SERVICE_NAME
-   Back up     pct pull $CTID $DATA_DIR/music-ui.db ./music-ui-backup.db
-   Redeploy    re-run this script
+ Useful commands (on the Proxmox host):
+   Logs:     pct exec ${CTID} -- journalctl -u music-ui -f
+   Restart:  pct exec ${CTID} -- systemctl restart music-ui
+   Update:   pct exec ${CTID} -- bash /root/provision.sh
+   Back up:  pct pull ${CTID} ${DATA_DIR}/music-ui.db ./music-ui-backup.db
 
-   There is no authentication. Keep this on a trusted network.
-
-EOF
-}
-
-main() {
-  preflight
-  ensure_container
-  provision_base
-  deploy_release
-  install_service
-  wait_healthy
-  summary
-}
-
-main "$@"
+ Update pulls the latest ${BRANCH}, rebuilds, and restarts.
+ Your library in ${DATA_DIR} is never touched.
+============================================================
+DONE

@@ -33,7 +33,11 @@
       "Bash(chmod +x deploy/provision-lxc.sh)",
       "Bash(command -v shellcheck)",
       "Bash(shellcheck deploy/provision-lxc.sh deploy/test-provision.sh)",
-      "Bash(git branch *)"
+      "Bash(git branch *)",
+      "Bash(curl -s -o /dev/null -w \"GitHub API for JdeGuise/music-ui: HTTP %{http_code}\\\\n\" https://api.github.com/repos/JdeGuise/music-ui)",
+      "Bash(chmod +x deploy/provision-lxc.sh deploy/test-provision.sh)",
+      "Bash(./deploy/provision-lxc.sh --dry-run)",
+      "Bash(perl -pi -e 's|\"git -C /opt/music-ui fetch\"|\"git -C \\\\\\\\\"/opt/music-ui\\\\\\\\\" fetch\"|; s|\"mkdir -p /var/lib/music-ui\"|\"mkdir -p \\\\\\\\\"/var/lib/music-ui\\\\\\\\\"\"|' deploy/test-provision.sh)"
     ]
   }
 }

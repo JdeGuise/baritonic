@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
-# Drives provision-lxc.sh in --dry-run and asserts on the emitted plan.
-# Runs anywhere: no Proxmox, no root, no side effects.
+# Drives provision-lxc.sh in --dry-run and asserts on what it would do and
+# on the files it generates. Runs anywhere: no Proxmox, no root, no side
+# effects.
 set -Eeuo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -40,46 +41,69 @@ else
   fail=$((fail + 1))
 fi
 
+plan="$("$SCRIPT" --dry-run 2>&1)"
+
+# The generated provision script must itself be valid bash. Extract it back
+# out of the dry-run output and parse it — this is the piece that actually
+# runs inside the container, so a syntax error here is a failed deploy.
+provision="$(sed -n '/--- \/root\/provision.sh ---/,$p' <<<"$plan" | sed -n 's/^   | //p')"
+if [ -n "$provision" ] && bash -n <(printf '%s\n' "$provision"); then
+  echo "  ok   generated provision.sh parses"
+  pass=$((pass + 1))
+else
+  echo "  FAIL generated provision.sh has a syntax error"
+  fail=$((fail + 1))
+fi
+
 echo "== help =="
 help_out="$("$SCRIPT" --help 2>&1 || true)"
 check "help mentions CTID" "CTID" "$help_out"
-check "help mentions dry-run" "--dry-run" "$help_out"
+check "help mentions the repo" "REPO=" "$help_out"
 
-echo "== defaults =="
-plan="$("$SCRIPT" --dry-run 2>&1)"
+echo "== host side =="
+check "resolves the template dynamically" "debian-12-standard" "$plan"
 check "creates a container" "pct create" "$plan"
 check "unprivileged" "--unprivileged 1" "$plan"
-check "installs node" "nodesource" "$plan"
-check "runs npm ci without devDeps" "npm ci --omit=dev" "$plan"
+check "starts on boot" "--onboot 1" "$plan"
+check "pushes the provision script" "/root/provision.sh" "$plan"
+check "runs the provision script" "bash /root/provision.sh" "$plan"
+check "checks health" "/healthz" "$plan"
+check "prints the update command" "Update:" "$plan"
+refute "never destroys" "pct destroy" "$plan"
+refute "never builds on the host" "cd '/" "$plan"
+
+echo "== provision script =="
+check "installs git" "git" "$provision"
+check "installs node from nodesource" "nodesource" "$provision"
+check "requires node 24+" "setup_24.x" "$provision"
+check "creates the service user" "useradd" "$provision"
+check "clones the repo" "git clone" "$provision"
+check "fast-forwards an existing checkout" "git -C \"/opt/music-ui\" fetch" "$provision"
+check "builds the web app in the container" "npm run build" "$provision"
+check "installs server deps without devDeps" "npm ci --omit=dev" "$provision"
 # Without this, ug-import cannot resolve music-core from its own source:
 # npm only links the packages into apps/server/node_modules, which is not
 # on the upward resolution path from packages/ug-import/.
-check "links workspace packages at the app root" "node_modules/@music-ui" "$plan"
-check "installs a systemd unit" "music-ui.service" "$plan"
-check "enables the service" "systemctl enable" "$plan"
-check "binds to all interfaces" "BIND_ADDR=0.0.0.0" "$plan"
-check "sets the data dir" "DATA_DIR=/var/lib/music-ui" "$plan"
-check "runs as a non-root user" "User=music-ui" "$plan"
-check "hardens the unit" "ProtectSystem=strict" "$plan"
-check "permits writes to the data dir" "ReadWritePaths=/var/lib/music-ui" "$plan"
-check "checks health" "/healthz" "$plan"
-refute "never destroys by default" "pct destroy" "$plan"
+check "links workspace packages at the repo root" "node_modules/@music-ui" "$provision"
+check "creates the data dir" "mkdir -p \"/var/lib/music-ui\"" "$provision"
+check "restarts the service" "systemctl restart music-ui" "$provision"
+refute "never removes the data dir" "rm -rf /var/lib/music-ui" "$provision"
+
+echo "== systemd unit =="
+unit="$(sed -n '/--- \/etc\/systemd\/system\/music-ui.service ---/,/--- \/root/p' <<<"$plan" | sed -n 's/^   | //p')"
+check "runs as a non-root user" "User=music-ui" "$unit"
+check "binds to all interfaces" "BIND_ADDR=0.0.0.0" "$unit"
+check "sets the data dir" "DATA_DIR=/var/lib/music-ui" "$unit"
+check "hardens the unit" "ProtectSystem=strict" "$unit"
+check "permits writes to the data dir" "ReadWritePaths=/var/lib/music-ui" "$unit"
+check "restarts on failure" "Restart=on-failure" "$unit"
 
 echo "== overrides are honoured =="
-plan2="$(CTID=999 APP_PORT=8080 DATA_DIR=/srv/music SERVICE_USER=muser "$SCRIPT" --dry-run 2>&1)"
+plan2="$(CTID=999 APP_PORT=8080 CT_HOSTNAME=music BRANCH=dev "$SCRIPT" --dry-run 2>&1)"
 check "custom ctid" "pct create 999" "$plan2"
+check "custom hostname" "--hostname music" "$plan2"
 check "custom port" "PORT=8080" "$plan2"
-check "custom data dir" "DATA_DIR=/srv/music" "$plan2"
-check "custom user" "User=muser" "$plan2"
-check "data dir writable" "ReadWritePaths=/srv/music" "$plan2"
-
-echo "== static networking =="
-plan3="$(IPV4=192.168.1.50/24 GATEWAY=192.168.1.1 "$SCRIPT" --dry-run 2>&1)"
-check "static ip" "ip=192.168.1.50/24" "$plan3"
-check "gateway" "gw=192.168.1.1" "$plan3"
-
-echo "== dhcp by default =="
-check "dhcp" "ip=dhcp" "$plan"
+check "custom branch" "--branch dev" "$plan2"
 
 echo
 printf '%d passed, %d failed\n' "$pass" "$fail"
