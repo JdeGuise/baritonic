@@ -1,5 +1,5 @@
-import { parseChord, type Chord } from "./chord";
-import { noteSemitone } from "./note";
+import { parseChord, type Chord } from "./chord.ts";
+import { noteSemitone } from "./note.ts";
 
 export interface KeyGuess {
   key: string;

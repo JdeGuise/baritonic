@@ -1,4 +1,4 @@
-import { noteToString, parseNote, type Note } from "./note";
+import { noteToString, parseNote, type Note } from "./note.ts";
 
 export interface Chord {
   root: Note;

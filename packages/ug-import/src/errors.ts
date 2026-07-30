@@ -7,9 +7,15 @@ export type ImportFailure =
   | { kind: "pro-tab"; message: string };
 
 export class ImportError extends Error {
-  constructor(readonly failure: ImportFailure) {
+  // Declared explicitly rather than as a constructor parameter property:
+  // Node's --experimental-strip-types rejects those, since they emit
+  // runtime code rather than only types.
+  readonly failure: ImportFailure;
+
+  constructor(failure: ImportFailure) {
     super(failure.message);
     this.name = "ImportError";
+    this.failure = failure;
   }
 }
 

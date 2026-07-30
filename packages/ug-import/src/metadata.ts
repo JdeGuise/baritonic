@@ -1,6 +1,6 @@
-import { ImportError } from "./errors";
-import { num, obj, str } from "./extract";
-import type { SongMeta } from "./types";
+import { ImportError } from "./errors.ts";
+import { num, obj, str } from "./extract.ts";
+import type { SongMeta } from "./types.ts";
 
 export function readMeta(data: Record<string, unknown>): SongMeta {
   const tab = obj(data, "tab") ?? {};

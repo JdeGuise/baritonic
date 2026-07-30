@@ -1,8 +1,8 @@
-import { chordToString, parseChord } from "./chord";
-import type { Line, Song } from "./document";
-import { keyDelta, type Interval } from "./interval";
-import { shiftNote } from "./note";
-import { spellNote } from "./spelling";
+import { chordToString, parseChord } from "./chord.ts";
+import type { Line, Song } from "./document.ts";
+import { keyDelta, type Interval } from "./interval.ts";
+import { shiftNote } from "./note.ts";
+import { spellNote } from "./spelling.ts";
 
 /** Transpose a chord symbol. Root and bass move; quality and extensions
  *  are untouched. Unparseable symbols are returned verbatim. */

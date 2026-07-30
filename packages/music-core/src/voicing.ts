@@ -1,6 +1,6 @@
-import type { Chord } from "./chord";
-import { noteSemitone, shiftNote, type Note } from "./note";
-import { spellNote } from "./spelling";
+import type { Chord } from "./chord.ts";
+import { noteSemitone, shiftNote, type Note } from "./note.ts";
+import { spellNote } from "./spelling.ts";
 
 export interface ChordTones {
   /** Semitones above the root. */

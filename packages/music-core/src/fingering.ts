@@ -1,4 +1,4 @@
-import type { Voicing } from "./voicing";
+import type { Voicing } from "./voicing.ts";
 
 /** Right-hand fingering by note count and inversion. */
 export function fingeringFor(noteCount: number, inversion: number): number[] {

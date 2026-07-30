@@ -1,13 +1,17 @@
 import { ImportError, describeFailure, type ImportFailure } from "@music-ui/ug-import";
 
 export class HttpError extends Error {
-  constructor(
-    readonly status: number,
-    message: string,
-    readonly detail?: unknown,
-  ) {
+  // Declared explicitly rather than as constructor parameter properties:
+  // Node's --experimental-strip-types rejects those, since they emit
+  // runtime code rather than only types.
+  readonly status: number;
+  readonly detail?: unknown;
+
+  constructor(status: number, message: string, detail?: unknown) {
     super(message);
     this.name = "HttpError";
+    this.status = status;
+    this.detail = detail;
   }
 }
 

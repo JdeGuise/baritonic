@@ -1,10 +1,10 @@
 import { collectSymbols, detectKey } from "@music-ui/music-core";
-import { parseBody } from "./body-parser";
-import { foldCapo } from "./capo";
-import { extractStore, getPageData } from "./extract";
-import { fetchPage, type FetchLike } from "./fetch";
-import { readBody, readMeta } from "./metadata";
-import type { ImportResult, SongMeta } from "./types";
+import { parseBody } from "./body-parser.ts";
+import { foldCapo } from "./capo.ts";
+import { extractStore, getPageData } from "./extract.ts";
+import { fetchPage, type FetchLike } from "./fetch.ts";
+import { readBody, readMeta } from "./metadata.ts";
+import type { ImportResult, SongMeta } from "./types.ts";
 
 function assemble(meta: SongMeta, rawBody: string): ImportResult {
   const { document, unparseableChords } = parseBody(rawBody);

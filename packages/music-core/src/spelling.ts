@@ -1,4 +1,4 @@
-import { LETTERS, LETTER_SEMITONE, noteSemitone, noteToString, type Letter, type Note } from "./note";
+import { LETTERS, LETTER_SEMITONE, noteSemitone, noteToString, type Letter, type Note } from "./note.ts";
 
 /** Keys whose signature uses flats. */
 export const FLAT_KEYS: ReadonlySet<string> = new Set(["F", "Bb", "Eb", "Ab", "Db", "Gb"]);

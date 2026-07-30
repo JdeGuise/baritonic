@@ -1,5 +1,5 @@
 import type { DatabaseSync } from "node:sqlite";
-import type { ChordOverride } from "../overlay";
+import type { ChordOverride } from "../overlay.ts";
 
 export interface ChordPosition {
   sectionIdx: number;
@@ -54,7 +54,7 @@ export function createOverrideRepo(db: DatabaseSync): OverrideRepo {
             WHERE song_id = ?
             ORDER BY section_idx, line_idx, chord_idx`,
         )
-        .all(songId) as RawOverrideRow[];
+        .all(songId) as unknown as RawOverrideRow[];
 
       return rows.map((r) => ({
         sectionIdx: r.section_idx,

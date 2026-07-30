@@ -1,4 +1,4 @@
-import { ImportError } from "./errors";
+import { ImportError } from "./errors.ts";
 
 const STORE_RE = /<div class="js-store" data-content="([\s\S]*?)"><\/div>/;
 

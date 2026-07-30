@@ -1,5 +1,5 @@
-import type { Chord } from "./chord";
-import { voicingsFor, type Voicing } from "./voicing";
+import type { Chord } from "./chord.ts";
+import { voicingsFor, type Voicing } from "./voicing.ts";
 
 /** Movement from one voicing to the next: for each note in the successor,
  *  the distance to the nearest note in the predecessor, plus a penalty on

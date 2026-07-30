@@ -1,4 +1,4 @@
-import { LETTERS, noteSemitone, parseNote } from "./note";
+import { LETTERS, noteSemitone, parseNote } from "./note.ts";
 
 export interface Interval {
   dLetter: number;

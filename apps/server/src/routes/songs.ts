@@ -2,10 +2,10 @@ import { Router } from "express";
 import type { DatabaseSync } from "node:sqlite";
 import { parseNote } from "@music-ui/music-core";
 import { importFromText, importFromUrl, type FetchLike } from "@music-ui/ug-import";
-import { applyOverrides } from "../overlay";
-import { HttpError } from "../http-errors";
-import { createOverrideRepo } from "../repo/overrides";
-import { createSongRepo, type SongUpdate } from "../repo/songs";
+import { applyOverrides } from "../overlay.ts";
+import { HttpError } from "../http-errors.ts";
+import { createOverrideRepo } from "../repo/overrides.ts";
+import { createSongRepo, type SongUpdate } from "../repo/songs.ts";
 
 function parseId(raw: string | undefined): number {
   const id = Number(raw);

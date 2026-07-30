@@ -1,12 +1,12 @@
-export type { ImportFailure } from "./errors";
-export { ImportError, describeFailure } from "./errors";
+export type { ImportFailure } from "./errors.ts";
+export { ImportError, describeFailure } from "./errors.ts";
 
-export type { SongMeta, ImportResult } from "./types";
+export type { SongMeta, ImportResult } from "./types.ts";
 
-export { importFromHtml, importFromText, importFromUrl } from "./import";
+export { importFromHtml, importFromText, importFromUrl } from "./import.ts";
 
-export type { FetchLike } from "./fetch";
-export { fetchPage, USER_AGENT } from "./fetch";
+export type { FetchLike } from "./fetch.ts";
+export { fetchPage, USER_AGENT } from "./fetch.ts";
 
-export { parseBody } from "./body-parser";
-export { foldCapo } from "./capo";
+export { parseBody } from "./body-parser.ts";
+export { foldCapo } from "./capo.ts";

@@ -1,4 +1,4 @@
-import { ImportError } from "./errors";
+import { ImportError } from "./errors.ts";
 
 export type FetchLike = (url: string, init?: RequestInit) => Promise<Response>;
 

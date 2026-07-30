@@ -1,5 +1,5 @@
 import { parseChord, type Line, type Section, type Song } from "@music-ui/music-core";
-import { hasChordTags, isSectionHeader, scanChordLine, stripTabWrappers } from "./tokens";
+import { hasChordTags, isSectionHeader, scanChordLine, stripTabWrappers } from "./tokens.ts";
 
 export function parseBody(body: string): { document: Song; unparseableChords: string[] } {
   const lines = stripTabWrappers(body).split(/\r\n|\r|\n/);

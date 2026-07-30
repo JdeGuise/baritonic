@@ -1,9 +1,9 @@
 import { Router } from "express";
 import type { DatabaseSync } from "node:sqlite";
 import { parseChord } from "@music-ui/music-core";
-import { HttpError } from "../http-errors";
-import { createOverrideRepo } from "../repo/overrides";
-import { createSongRepo } from "../repo/songs";
+import { HttpError } from "../http-errors.ts";
+import { createOverrideRepo } from "../repo/overrides.ts";
+import { createSongRepo } from "../repo/songs.ts";
 
 function index(raw: string | undefined, name: string): number {
   const n = Number(raw);
@@ -21,19 +21,26 @@ function songId(raw: string | undefined): number {
   return n;
 }
 
+/** Express does not propagate a parent router's params into the child's
+ *  inferred param type, even with mergeParams, so read them structurally. */
+function params(req: { params: unknown }): Record<string, string | undefined> {
+  return req.params as Record<string, string | undefined>;
+}
+
 export function createOverrideRoutes(deps: { db: DatabaseSync }): Router {
   const router = Router({ mergeParams: true });
   const songs = createSongRepo(deps.db);
   const overrides = createOverrideRepo(deps.db);
 
   router.put("/:sectionIdx/:lineIdx/:chordIdx", (req, res) => {
-    const id = songId(req.params.id);
+    const p = params(req);
+    const id = songId(p.id);
     if (!songs.get(id)) throw new HttpError(404, "Song not found");
 
     const at = {
-      sectionIdx: index(req.params.sectionIdx, "sectionIdx"),
-      lineIdx: index(req.params.lineIdx, "lineIdx"),
-      chordIdx: index(req.params.chordIdx, "chordIdx"),
+      sectionIdx: index(p.sectionIdx, "sectionIdx"),
+      lineIdx: index(p.lineIdx, "lineIdx"),
+      chordIdx: index(p.chordIdx, "chordIdx"),
     };
 
     const body = (req.body ?? {}) as Record<string, unknown>;
@@ -68,13 +75,14 @@ export function createOverrideRoutes(deps: { db: DatabaseSync }): Router {
   });
 
   router.delete("/:sectionIdx/:lineIdx/:chordIdx", (req, res) => {
-    const id = songId(req.params.id);
+    const p = params(req);
+    const id = songId(p.id);
     if (!songs.get(id)) throw new HttpError(404, "Song not found");
 
     const removed = overrides.remove(id, {
-      sectionIdx: index(req.params.sectionIdx, "sectionIdx"),
-      lineIdx: index(req.params.lineIdx, "lineIdx"),
-      chordIdx: index(req.params.chordIdx, "chordIdx"),
+      sectionIdx: index(p.sectionIdx, "sectionIdx"),
+      lineIdx: index(p.lineIdx, "lineIdx"),
+      chordIdx: index(p.chordIdx, "chordIdx"),
     });
     if (!removed) throw new HttpError(404, "No override at that position");
     res.status(204).end();
