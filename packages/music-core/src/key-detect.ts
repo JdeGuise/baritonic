@@ -1,6 +1,5 @@
 import { parseChord, type Chord } from "./chord";
 import { noteSemitone } from "./note";
-import { FLAT_KEYS } from "./spelling";
 
 export interface KeyGuess {
   key: string;
@@ -8,8 +7,11 @@ export interface KeyGuess {
   confidence: number;
 }
 
-const SHARP_NAMES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
-const FLAT_NAMES = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+/** Conventional key-centre spellings. These differ by mode: Db major and
+ *  C# minor are both real keys, but Db minor and C# major are not how
+ *  anyone writes them. */
+const MAJOR_KEY_NAMES = ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"];
+const MINOR_KEY_NAMES = ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B"];
 
 const MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11];
 const MINOR_SCALE = [0, 2, 3, 5, 7, 8, 10];
@@ -25,12 +27,7 @@ function tonicQuality(quality: string): "major" | "minor" | "other" {
 }
 
 function nameFor(pc: number, mode: "major" | "minor"): string {
-  const sharp = SHARP_NAMES[pc]!;
-  const flat = FLAT_NAMES[pc]!;
-  // Prefer whichever spelling names a conventional key centre.
-  if (FLAT_KEYS.has(flat)) return flat;
-  void mode;
-  return sharp;
+  return (mode === "major" ? MAJOR_KEY_NAMES[pc] : MINOR_KEY_NAMES[pc])!;
 }
 
 export function detectKey(symbols: string[]): KeyGuess {
