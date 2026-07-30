@@ -145,3 +145,23 @@ body {
   background: var(--panel-sub); color: var(--ink); width: 100%;
 }
 textarea.input { font-size: 0.8rem; line-height: 1.5; resize: vertical; }
+
+/* song page */
+.song-title { font-family: var(--mono); font-size: 1.5rem; font-weight: 600; letter-spacing: -0.03em; margin: 0; }
+
+.chartbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3);
+  padding-bottom: var(--s4); border-bottom: 1px solid var(--hair);
+}
+.kgroup { display: inline-flex; align-items: center; gap: var(--s2); }
+.klabel {
+  font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted);
+}
+.ksel {
+  font-family: var(--mono); font-size: 0.85rem; font-weight: 600;
+  padding: 0.3rem 0.5rem; border: 1px solid var(--hair-firm); border-radius: 4px;
+  background: var(--panel); color: var(--ink); cursor: pointer;
+}
+.ksel.emphasis { border-color: var(--felt); color: var(--felt); }
+.steps { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); }
