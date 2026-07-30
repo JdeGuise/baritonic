@@ -1,4 +1,4 @@
-import type { ChordRef } from "@music-ui/music-core";
+import type { ChordRef } from "@baritonic/music-core";
 
 export interface ChartUnit {
   /** Chords sitting above this run of text. Usually zero or one. */

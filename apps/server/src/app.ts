@@ -1,6 +1,6 @@
 import express, { type Express, type NextFunction, type Request, type Response } from "express";
 import type { DatabaseSync } from "node:sqlite";
-import type { FetchLike } from "@music-ui/ug-import";
+import type { FetchLike } from "@baritonic/ug-import";
 import { HttpError, toHttpError } from "./http-errors.ts";
 import { createOverrideRoutes } from "./routes/overrides.ts";
 import { createSongRoutes } from "./routes/songs.ts";

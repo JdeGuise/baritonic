@@ -15,7 +15,7 @@ const staticDir = existsSync(webDist) ? webDist : undefined;
 const app = createApp({ db, staticDir });
 
 const server = app.listen(config.port, config.bindAddr, () => {
-  console.log(`music-ui listening on http://${config.bindAddr}:${config.port}`);
+  console.log(`baritonic listening on http://${config.bindAddr}:${config.port}`);
   console.log(`  database:   ${config.dbPath} (schema v${version})`);
   console.log(`  web assets: ${staticDir ?? "not built — API only"}`);
 });

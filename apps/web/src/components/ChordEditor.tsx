@@ -5,7 +5,7 @@ import {
   parseChord,
   spellChordTones,
   voicingsFor,
-} from "@music-ui/music-core";
+} from "@baritonic/music-core";
 import { toWrittenKey } from "../music/editing.ts";
 import { PianoDiagram } from "./PianoDiagram.tsx";
 

@@ -1,5 +1,5 @@
 {
-  "name": "@music-ui/web",
+  "name": "@baritonic/web",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -12,7 +12,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@music-ui/music-core": "file:../../packages/music-core",
+    "@baritonic/music-core": "file:../../packages/music-core",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-router-dom": "^7.0.0"

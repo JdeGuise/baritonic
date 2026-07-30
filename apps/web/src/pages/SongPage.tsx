@@ -11,7 +11,7 @@ import {
   transposeDocument,
   type Chord,
   type Song,
-} from "@music-ui/music-core";
+} from "@baritonic/music-core";
 import { api } from "../api/client.ts";
 import type { ChordPosition, SongDetail } from "../api/types.ts";
 import { ChordChart } from "../components/ChordChart.tsx";

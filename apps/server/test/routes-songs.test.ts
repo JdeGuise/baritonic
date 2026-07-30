@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import type { Server } from "node:http";
-import type { FetchLike } from "@music-ui/ug-import";
+import type { FetchLike } from "@baritonic/ug-import";
 import { createApp } from "../src/app";
 import { createSongRepo } from "../src/repo/songs";
 import { createOverrideRepo } from "../src/repo/overrides";

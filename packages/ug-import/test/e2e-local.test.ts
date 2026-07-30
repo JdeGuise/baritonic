@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, existsSync } from "node:fs";
-import type { Line } from "@music-ui/music-core";
+import type { Line } from "@baritonic/music-core";
 import { importFromHtml } from "../src/import";
 
 /** A real saved tab page, kept out of the repository. This suite skips

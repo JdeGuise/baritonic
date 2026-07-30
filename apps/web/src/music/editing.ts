@@ -1,4 +1,4 @@
-import { keyDelta, parseChord, transposeChordSymbol, type Song } from "@music-ui/music-core";
+import { keyDelta, parseChord, transposeChordSymbol, type Song } from "@baritonic/music-core";
 import type { ChordOverride, ChordPosition } from "../api/types.ts";
 
 /** Translate a chord the user typed while viewing `targetKey` into the

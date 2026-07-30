@@ -22,9 +22,9 @@ const start = async (staticDir?: string) => {
 
 beforeEach(() => {
   t = tempDb();
-  webDir = mkdtempSync(join(tmpdir(), "music-ui-web-"));
+  webDir = mkdtempSync(join(tmpdir(), "baritonic-web-"));
   mkdirSync(join(webDir, "assets"), { recursive: true });
-  writeFileSync(join(webDir, "index.html"), "<!doctype html><title>music-ui</title>");
+  writeFileSync(join(webDir, "index.html"), "<!doctype html><title>baritonic</title>");
   writeFileSync(join(webDir, "assets", "app.js"), "console.log(1);");
 });
 afterEach(async () => {
@@ -38,7 +38,7 @@ describe("static serving", () => {
     await start(webDir);
     const res = await fetch(`${base}/`);
     expect(res.status).toBe(200);
-    expect(await res.text()).toContain("music-ui");
+    expect(await res.text()).toContain("baritonic");
   });
 
   it("serves built assets", async () => {
@@ -50,7 +50,7 @@ describe("static serving", () => {
     await start(webDir);
     const res = await fetch(`${base}/songs/42`);
     expect(res.status).toBe(200);
-    expect(await res.text()).toContain("music-ui");
+    expect(await res.text()).toContain("baritonic");
   });
 
   it("never falls back for api routes", async () => {

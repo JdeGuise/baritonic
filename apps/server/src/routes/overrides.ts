@@ -1,6 +1,6 @@
 import { Router } from "express";
 import type { DatabaseSync } from "node:sqlite";
-import { parseChord } from "@music-ui/music-core";
+import { parseChord } from "@baritonic/music-core";
 import { HttpError } from "../http-errors.ts";
 import { createOverrideRepo } from "../repo/overrides.ts";
 import { createSongRepo } from "../repo/songs.ts";

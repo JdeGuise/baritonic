@@ -1,4 +1,4 @@
-# music-ui — design
+# baritonic — design
 
 **Date:** 2026-07-30
 **Status:** Approved, ready for implementation planning

@@ -1,5 +1,5 @@
 {
-  "name": "@music-ui/ug-import",
+  "name": "@baritonic/ug-import",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@music-ui/music-core": "file:../music-core"
+    "@baritonic/music-core": "file:../music-core"
   },
   "devDependencies": {
     "@types/node": "^26.1.2",

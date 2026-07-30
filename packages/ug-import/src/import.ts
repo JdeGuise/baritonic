@@ -1,4 +1,4 @@
-import { collectSymbols, detectKey } from "@music-ui/music-core";
+import { collectSymbols, detectKey } from "@baritonic/music-core";
 import { parseBody } from "./body-parser.ts";
 import { foldCapo } from "./capo.ts";
 import { extractStore, getPageData } from "./extract.ts";

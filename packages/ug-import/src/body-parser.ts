@@ -1,4 +1,4 @@
-import { parseChord, type Line, type Section, type Song } from "@music-ui/music-core";
+import { parseChord, type Line, type Section, type Song } from "@baritonic/music-core";
 import { hasChordTags, isSectionHeader, scanChordLine, stripTabWrappers } from "./tokens.ts";
 
 export function parseBody(body: string): { document: Song; unparseableChords: string[] } {

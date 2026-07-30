@@ -12,7 +12,7 @@
     "allowImportingTsExtensions": true,
     "types": ["vitest/globals", "@testing-library/jest-dom"],
     "baseUrl": ".",
-    "paths": { "@music-ui/music-core": ["../../packages/music-core/src/index.ts"] }
+    "paths": { "@baritonic/music-core": ["../../packages/music-core/src/index.ts"] }
   },
   "include": ["src", "test"]
 }

@@ -1,4 +1,4 @@
-import type { ChordRef, Line, Song } from "@music-ui/music-core";
+import type { ChordRef, Line, Song } from "@baritonic/music-core";
 
 export interface ChordOverride {
   sectionIdx: number;

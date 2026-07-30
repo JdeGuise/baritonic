@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseChord, voicingsFor, fingerVoicing } from "@music-ui/music-core";
+import { parseChord, voicingsFor, fingerVoicing } from "@baritonic/music-core";
 import { layoutKeyboard } from "../src/music/keyboard.ts";
 
 const layoutFor = (sym: string, inversion = 0) => {

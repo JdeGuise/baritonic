@@ -1,4 +1,4 @@
-# music-ui
+# baritonic
 
 A personal chord-chart reader. Import a song from Ultimate Guitar, and read
 it back as lyrics with chords above them and piano diagrams below — in

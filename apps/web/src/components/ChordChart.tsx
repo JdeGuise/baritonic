@@ -1,4 +1,4 @@
-import { parseChord, type Line, type Song } from "@music-ui/music-core";
+import { parseChord, type Line, type Song } from "@baritonic/music-core";
 import type { ChordPosition } from "../api/types.ts";
 import { toUnits, type ChartUnit } from "../music/units.ts";
 

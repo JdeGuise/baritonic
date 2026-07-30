@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import type { Song } from "@music-ui/music-core";
+import type { Song } from "@baritonic/music-core";
 import { applyOverrides, type ChordOverride } from "../src/overlay";
 
 const doc = (): Song => ({

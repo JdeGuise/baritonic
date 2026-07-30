@@ -5,7 +5,7 @@ export default defineConfig({
   test: { globals: true, include: ["test/**/*.test.ts"] },
   resolve: {
     alias: {
-      "@music-ui/music-core": fileURLToPath(
+      "@baritonic/music-core": fileURLToPath(
         new URL("../music-core/src/index.ts", import.meta.url),
       ),
     },
