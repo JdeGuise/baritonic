@@ -2,6 +2,7 @@ import { Link, Route, Routes } from "react-router-dom";
 import { ImportPage } from "./pages/ImportPage.tsx";
 import { LibraryPage } from "./pages/LibraryPage.tsx";
 import { SongPage } from "./pages/SongPage.tsx";
+import { StagePage } from "./pages/StagePage.tsx";
 
 export function App() {
   return (
@@ -22,6 +23,7 @@ export function App() {
         <Route path="/" element={<LibraryPage />} />
         <Route path="/import" element={<ImportPage />} />
         <Route path="/songs/:id" element={<SongPage />} />
+        <Route path="/songs/:id/stage" element={<StagePage />} />
       </Routes>
     </div>
   );

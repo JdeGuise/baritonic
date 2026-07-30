@@ -4,6 +4,7 @@ import { BrowserRouter } from "react-router-dom";
 import { App } from "./App.tsx";
 import "./styles/tokens.css";
 import "./styles/app.css";
+import "./styles/stage.css";
 
 const root = document.getElementById("root");
 if (!root) throw new Error("#root not found");

@@ -1,0 +1,50 @@
+.stage {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--ivory);
+  color: var(--ink);
+}
+
+.stage-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--s6) var(--s5);
+  scroll-behavior: auto;
+}
+
+.stage-head { margin-bottom: var(--s6); }
+.stage-head h1 {
+  font-family: var(--mono); font-weight: 600; letter-spacing: -0.03em;
+  margin: 0; font-size: calc(1.4rem * var(--stage-scale));
+}
+.stage-head p {
+  margin: 0; color: var(--muted);
+  font-size: calc(0.85rem * var(--stage-scale));
+}
+
+/* The chart scales as one system so chords and lyrics keep proportion. */
+.stage .unit-chord { font-size: calc(0.82rem * var(--stage-scale)); }
+.stage .unit-text { font-size: calc(1rem * var(--stage-scale)); }
+.stage .eyebrow { font-size: calc(0.7rem * var(--stage-scale)); }
+.stage .chart-note { font-size: calc(0.9rem * var(--stage-scale)); }
+
+/* Room to scroll the last line up to a comfortable reading height. */
+.stage-tail { height: 60vh; }
+
+.stage-bar {
+  display: flex; align-items: center; gap: var(--s3);
+  flex-wrap: wrap;
+  padding: var(--s3) var(--s5);
+  border-top: 1px solid var(--hair);
+  background: var(--panel);
+  transition: opacity 240ms ease;
+}
+.stage-bar.dim { opacity: 0.25; }
+.stage-bar.dim:hover,
+.stage-bar.dim:focus-within { opacity: 1; }
+
+@media (prefers-reduced-motion: reduce) {
+  .stage-bar { transition: none; }
+}
