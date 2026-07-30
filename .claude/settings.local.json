@@ -23,7 +23,9 @@
       "Bash(git commit *)",
       "Bash(xargs -I{} echo \"  total: {}\")",
       "Bash(grep -v \"^\\\\.$\")",
-      "Bash(perl -pi -e 's/\\\\{ name: \\\\/save\\\\/i \\\\}/{ name: \"Save\" }/g' test/song-page.test.tsx)"
+      "Bash(perl -pi -e 's/\\\\{ name: \\\\/save\\\\/i \\\\}/{ name: \"Save\" }/g' test/song-page.test.tsx)",
+      "Bash(perl -pi -e 's|import \\\\{ SongPage \\\\} from \"./pages/SongPage.tsx\";|import { SongPage } from \"./pages/SongPage.tsx\";\\\\nimport { StagePage } from \"./pages/StagePage.tsx\";|; s|<Route path=\"/songs/:id\" element=\\\\{<SongPage />\\\\} />|<Route path=\"/songs/:id\" element={<SongPage />} />\\\\n        <Route path=\"/songs/:id/stage\" element={<StagePage />} />|' src/App.tsx)",
+      "Bash(perl -pi -e 's|import \"./styles/app.css\";|import \"./styles/app.css\";\\\\nimport \"./styles/stage.css\";|' src/main.tsx)"
     ]
   }
 }
