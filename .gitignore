@@ -9,3 +9,6 @@ coverage/
 data/
 *.db
 *.db-journal
+
+# Real saved tab pages, kept out of the repo — test fixtures are synthetic
+packages/ug-import/test/fixtures/local/
