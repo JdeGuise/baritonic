@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
 import type { Song } from "@music-ui/music-core";
 import { transposeDocument } from "@music-ui/music-core";
 import { ChordChart } from "../src/components/ChordChart.tsx";
@@ -110,5 +110,47 @@ describe("ChordChart", () => {
   it("renders an empty document without crashing", () => {
     const { container } = render(<ChordChart document={{ sections: [] }} />);
     expect(container.querySelectorAll(".unit")).toHaveLength(0);
+  });
+});
+
+describe("ChordChart editing affordances", () => {
+  it("renders plain spans when no handler is given", () => {
+    const { container } = render(<ChordChart document={doc} />);
+    expect(container.querySelectorAll("button.unit-chord")).toHaveLength(0);
+  });
+
+  it("renders chords as buttons when a handler is given", () => {
+    const { container } = render(<ChordChart document={doc} onChordClick={() => {}} />);
+    expect(container.querySelectorAll("button.unit-chord").length).toBeGreaterThan(0);
+  });
+
+  it("reports the position of the clicked chord", () => {
+    const onChordClick = vi.fn();
+    render(<ChordChart document={doc} onChordClick={onChordClick} />);
+    fireEvent.click(screen.getAllByRole("button", { name: "C#m" })[0]!);
+    expect(onChordClick).toHaveBeenCalledWith({ sectionIdx: 0, lineIdx: 0, chordIdx: 1 });
+  });
+
+  it("reports positions on instrumental lines too", () => {
+    const onChordClick = vi.fn();
+    render(<ChordChart document={doc} onChordClick={onChordClick} />);
+    fireEvent.click(screen.getAllByRole("button", { name: "B" })[0]!);
+    expect(onChordClick).toHaveBeenCalledWith({ sectionIdx: 1, lineIdx: 0, chordIdx: 1 });
+  });
+
+  it("marks pinned positions", () => {
+    const { container } = render(
+      <ChordChart
+        document={doc}
+        onChordClick={() => {}}
+        pinnedPositions={[{ sectionIdx: 0, lineIdx: 0, chordIdx: 0 }]}
+      />,
+    );
+    expect(container.querySelectorAll(".unit-chord.pinned")).toHaveLength(1);
+  });
+
+  it("does not mark anything when nothing is pinned", () => {
+    const { container } = render(<ChordChart document={doc} onChordClick={() => {}} />);
+    expect(container.querySelectorAll(".unit-chord.pinned")).toHaveLength(0);
   });
 });

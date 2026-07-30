@@ -165,3 +165,23 @@ textarea.input { font-size: 0.8rem; line-height: 1.5; resize: vertical; }
 }
 .ksel.emphasis { border-color: var(--felt); color: var(--felt); }
 .steps { font-family: var(--mono); font-size: 0.75rem; color: var(--muted); }
+
+/* chord editor */
+.editor {
+  position: absolute; z-index: 20; margin-top: var(--s2);
+  display: flex; flex-direction: column; gap: var(--s3);
+  min-width: 240px; padding: var(--s4);
+  background: var(--panel); border: 1px solid var(--hair-firm);
+  border-radius: 6px; box-shadow: 0 6px 24px rgb(0 0 0 / 18%);
+}
+.editor .pd { border: none; padding: 0; }
+.editor-error { font-size: 0.78rem; color: var(--felt); }
+.editor-remove { color: var(--felt); border-color: var(--felt-soft); }
+
+button.unit-chord {
+  font: inherit; color: var(--felt); background: none;
+  border: none; padding: 0; cursor: pointer; text-align: left;
+  border-bottom: 1px dashed transparent;
+}
+button.unit-chord:hover { border-bottom-color: var(--felt); }
+button.unit-chord.pinned { text-decoration: underline; text-underline-offset: 2px; }
