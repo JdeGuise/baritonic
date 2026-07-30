@@ -124,3 +124,24 @@ body {
 @media (max-width: 620px) {
   .lib-row { grid-template-columns: 1fr; align-items: start; gap: var(--s2); }
 }
+
+/* import */
+.tabs { display: flex; border-bottom: 1px solid var(--hair); }
+.tab {
+  font-family: var(--mono); font-size: 0.82rem; padding: var(--s2) var(--s4);
+  border: none; border-bottom: 2px solid transparent; background: none;
+  color: var(--muted); cursor: pointer;
+}
+.tab[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--felt); font-weight: 600; }
+
+.field { display: flex; flex-direction: column; gap: var(--s2); }
+.field label {
+  font-family: var(--mono); font-size: 0.72rem; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted);
+}
+.input {
+  font-family: var(--mono); font-size: 0.85rem; padding: 0.55rem 0.7rem;
+  border: 1px solid var(--hair-firm); border-radius: 4px;
+  background: var(--panel-sub); color: var(--ink); width: 100%;
+}
+textarea.input { font-size: 0.8rem; line-height: 1.5; resize: vertical; }

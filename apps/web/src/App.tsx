@@ -1,4 +1,5 @@
 import { Link, Route, Routes } from "react-router-dom";
+import { ImportPage } from "./pages/ImportPage.tsx";
 import { LibraryPage } from "./pages/LibraryPage.tsx";
 
 export function App() {
@@ -18,6 +19,7 @@ export function App() {
       </header>
       <Routes>
         <Route path="/" element={<LibraryPage />} />
+        <Route path="/import" element={<ImportPage />} />
       </Routes>
     </div>
   );
