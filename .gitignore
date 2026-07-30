@@ -12,3 +12,4 @@ data/
 
 # Real saved tab pages, kept out of the repo — test fixtures are synthetic
 packages/ug-import/test/fixtures/local/
+.claude/settings.local.json
