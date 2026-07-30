@@ -20,7 +20,10 @@
       "Bash(git add *)",
       "Bash(git commit -q -m 'feat\\(server\\): static asset serving and entry point *)",
       "Bash(xargs -I{} echo \"act warnings: {}\")",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(xargs -I{} echo \"  total: {}\")",
+      "Bash(grep -v \"^\\\\.$\")",
+      "Bash(perl -pi -e 's/\\\\{ name: \\\\/save\\\\/i \\\\}/{ name: \"Save\" }/g' test/song-page.test.tsx)"
     ]
   }
 }
